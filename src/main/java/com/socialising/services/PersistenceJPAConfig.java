@@ -21,7 +21,7 @@ public class PersistenceJPAConfig {
     public javax.sql.DataSource dataSource(){
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName("org.postgresql.Driver");
-        dataSource.setUrl("jdbc:postgresql://localhost:5432/socialize?createDatabaseIfNotExist=true");
+        dataSource.setUrl("jdbc:postgresql://localhost:5432/postgres?createDatabaseIfNotExist=true");
         dataSource.setUsername( "postgres" );
         dataSource.setPassword( "1234");
         return dataSource;

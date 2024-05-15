@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 public class ConfirmedPost {
 
-    private Integer postId;
+    private Long postId;
 
     private Timestamp meetingTs;    // Time fixed to meet
 

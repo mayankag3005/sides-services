@@ -1,9 +1,9 @@
 package com.socialising.services.model;
 
 public class Comment {
-    private Integer commentId;
+    private Long commentId;
 
     private String description;
 
-    private Integer userId;
+    private Long userId;
 }

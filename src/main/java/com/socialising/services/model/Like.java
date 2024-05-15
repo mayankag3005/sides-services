@@ -2,7 +2,7 @@ package com.socialising.services.model;
 
 public class Like {
 
-    private Integer likeId;
+    private Long likeId;
 
-    private Integer userId;
+    private Long userId;
 }

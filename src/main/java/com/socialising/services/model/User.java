@@ -1,34 +1,36 @@
 package com.socialising.services.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-import java.util.ArrayList;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "user")
 @Entity
+@Data
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private Integer userId;
+    private Long userId;
 
-    private String name;
+    private String userName;
 
     private String email;
 
     private String phoneNumber;
 
     private String dob;
+
+    public void setPhoneNumber(String phoneNo) {
+        this.phoneNumber = phoneNo;
+    }
+
+    public String getPhoneNumber() {
+        return this.phoneNumber;
+    }
 
 //    private ArrayList<Friend> friends;
 //

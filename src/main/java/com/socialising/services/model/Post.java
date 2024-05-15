@@ -10,16 +10,16 @@ import java.util.ArrayList;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "Post")
+@Table(name = "post")
 @Entity
 @Data
 public class Post {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private Integer postId;
+    private Long postId;
 
-    private Integer userId;
+    private Long userId;
 
     private String description;
 

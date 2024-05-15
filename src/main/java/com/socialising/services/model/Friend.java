@@ -2,7 +2,7 @@ package com.socialising.services.model;
 
 public class Friend {
 
-    private Integer userId;
+    private Long userId;
 
     private String name;
 }
