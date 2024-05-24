@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
 
 @Getter
 @Setter
@@ -15,8 +14,22 @@ import java.util.ArrayList;
 @Data
 public class Post {
 
+    public Post() {}
+
+    public Post(Long postId, Long userId, String description, Timestamp createdTs, String postType, String timeType, String postStartTs, String postEndTs, String location, char onlyForWomen) {
+        this.description = description;
+        this.postId = postId;
+        this.userId = userId;
+        this.createdTs = createdTs;
+        this.postType = postType;
+        this.timeType = timeType;
+        this.postStartTs = postStartTs;
+        this.postEndTs = postEndTs;
+        this.location = location;
+        this.onlyForWomen = onlyForWomen;
+    }
+
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long postId;
 
     private Long userId;

@@ -20,7 +20,7 @@ public class TwilioConfig {
 
     private String AUTH_TOKEN = "";
 
-    private String TRIAL_NUMBER = "6387905989";
+    private String TRIAL_NUMBER = "";
 
     public String getTrialNumber() {
         return TRIAL_NUMBER;
