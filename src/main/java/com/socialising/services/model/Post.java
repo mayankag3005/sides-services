@@ -2,8 +2,11 @@ package com.socialising.services.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.sql.Timestamp;
+import java.text.DecimalFormat;
+import java.util.Random;
 
 @Getter
 @Setter
@@ -16,11 +19,10 @@ public class Post {
 
     public Post() {}
 
-    public Post(Long postId, Long userId, String description, Timestamp createdTs, String postType, String timeType, String postStartTs, String postEndTs, String location, char onlyForWomen) {
+    public Post(Long userId, String description, String createdTs, String postType, String timeType, String postStartTs, String postEndTs, String location, char onlyForWomen) {
         this.description = description;
-        this.postId = postId;
         this.userId = userId;
-        this.createdTs = createdTs;
+        this.createdTs = new Timestamp(Long.parseLong(createdTs));
         this.postType = postType;
         this.timeType = timeType;
         this.postStartTs = postStartTs;
@@ -48,6 +50,8 @@ public class Post {
 
     private String location;
 
+    private char onlyForWomen;
+
 //    private ArrayList<Image> images;
 //
 //    private ArrayList<Video> videos;
@@ -62,5 +66,49 @@ public class Post {
 //
 //    private ArrayList<Friend> interestedUsers;
 
-    private char onlyForWomen;
+
+
+    public Long getPostId() {
+        return postId;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Timestamp getCreatedTs() {
+        return createdTs;
+    }
+
+    public String getPostType() {
+        return postType;
+    }
+
+    public String getTimeType() {
+        return timeType;
+    }
+
+    public String getPostStartTs() {
+        return postStartTs;
+    }
+
+    public String getPostEndTs() {
+        return postEndTs;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public char getOnlyForWomen() {
+        return onlyForWomen;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setPostId() {
+        this.postId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
+    }
 }

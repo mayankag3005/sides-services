@@ -5,18 +5,13 @@ import com.socialising.services.model.Post;
 import com.socialising.services.repository.ImageRepository;
 import com.socialising.services.repository.PostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
-import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.Timestamp;
-import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/post/")
@@ -27,30 +22,36 @@ public class PostController {
     @Autowired
     private ImageRepository imageRepository;
 
-    // Inject the object of PostRepository using the Bean created in PostRepository Interface
+    // Inject the object of Repository using the Bean created in Repository Interface
     public PostController(PostRepository postRepository, ImageRepository imageRepository) {
         this.postRepository = postRepository;
         this.imageRepository = imageRepository;
     }
 
-    @PostMapping("/postAPost")
-    public ResponseEntity addPost() {
+    @PostMapping("addPost")
+    public Post addPost(@RequestBody Post post) {
 
-        var post = new Post(1223L, 3256L, "this is a description", new Timestamp(2019-11- 5L) , "general", "current", "26-05-2024", "27-05-2024", "Bangalore", 'N');
+        post.setPostId();
 
         this.postRepository.save(post);
 
         System.out.println(this.postRepository.count());
 
-        return ResponseEntity.ok(this.postRepository.findAll());
+        return post;
     }
 
-    @GetMapping("/getAllPosts")
-    public ResponseEntity getAllPosts() {
+    @GetMapping("getAllPosts")
+    public ArrayList<Post> getAllPosts() {
 
-        System.out.println(this.postRepository.findAll());
+        return (ArrayList<Post>) this.postRepository.findAll();
+    }
 
-        return ResponseEntity.ok(this.postRepository.findAll());
+    @GetMapping("getPost/{id}")
+    public Optional<Post> getPostById(@PathVariable Long id) {
+
+        Optional<Post> post = this.postRepository.findById(id);
+
+        return post;
     }
 
     public void exampleImageUpload() throws Exception {
