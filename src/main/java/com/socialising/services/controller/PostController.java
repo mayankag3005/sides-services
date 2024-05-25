@@ -4,6 +4,9 @@ import com.socialising.services.model.Image;
 import com.socialising.services.model.Post;
 import com.socialising.services.repository.ImageRepository;
 import com.socialising.services.repository.PostRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,8 +18,10 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/post/")
+@Slf4j
 public class PostController {
 
+    private static final Logger log = LoggerFactory.getLogger(PostController.class);
     private final PostRepository postRepository;
 
     @Autowired
@@ -35,13 +40,15 @@ public class PostController {
 
         this.postRepository.save(post);
 
-        System.out.println(this.postRepository.count());
+        log.info("Post added to db");
 
         return post;
     }
 
     @GetMapping("getAllPosts")
     public ArrayList<Post> getAllPosts() {
+
+        log.info("Total number of posts: {}", this.postRepository.count());
 
         return (ArrayList<Post>) this.postRepository.findAll();
     }

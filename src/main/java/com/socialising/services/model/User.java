@@ -3,6 +3,9 @@ package com.socialising.services.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.text.DecimalFormat;
+import java.util.Random;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -12,24 +15,20 @@ import lombok.*;
 @Data
 public class User {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long userId;
-
     public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setUserId() {
+        this.userId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
     }
 
-    public String getUserName() {
-        return userName;
+    public String getUsername() {
+        return username;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public void setUserName(String username) {
+        this.username = username;
     }
 
     public String getEmail() {
@@ -48,14 +47,6 @@ public class User {
         this.dob = dob;
     }
 
-    private String userName;
-
-    private String email;
-
-    private String phoneNumber;
-
-    private String dob;
-
     public void setPhoneNumber(String phoneNo) {
         this.phoneNumber = phoneNo;
     }
@@ -63,6 +54,17 @@ public class User {
     public String getPhoneNumber() {
         return this.phoneNumber;
     }
+
+    @Id
+    private Long userId;
+
+    private String username;
+
+    private String email;
+
+    private String phoneNumber;
+
+    private String dob;
 
 //    private ArrayList<Friend> friends;
 //

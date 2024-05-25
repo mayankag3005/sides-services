@@ -2,7 +2,6 @@ package com.socialising.services.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.GenericGenerator;
 
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
@@ -19,10 +18,10 @@ public class Post {
 
     public Post() {}
 
-    public Post(Long userId, String description, String createdTs, String postType, String timeType, String postStartTs, String postEndTs, String location, char onlyForWomen) {
+    public Post(Long userId, String description, Timestamp createdTs, String postType, String timeType, String postStartTs, String postEndTs, String location, char onlyForWomen) {
         this.description = description;
         this.userId = userId;
-        this.createdTs = new Timestamp(Long.parseLong(createdTs));
+        this.createdTs = createdTs;
         this.postType = postType;
         this.timeType = timeType;
         this.postStartTs = postStartTs;
@@ -109,6 +108,6 @@ public class Post {
     }
 
     public void setPostId() {
-        this.postId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
+        this.postId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
     }
 }
