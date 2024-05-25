@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/post/")
@@ -37,6 +36,7 @@ public class PostController {
     public Post addPost(@RequestBody Post post) {
 
         post.setPostId();
+        post.setCreatedTs();
 
         this.postRepository.save(post);
 
@@ -54,11 +54,9 @@ public class PostController {
     }
 
     @GetMapping("getPost/{id}")
-    public Optional<Post> getPostById(@PathVariable Long id) {
+    public Post getPostById(@PathVariable Long id) {
 
-        Optional<Post> post = this.postRepository.findById(id);
-
-        return post;
+        return this.postRepository.findById(id).isPresent() ? this.postRepository.findById(id).get() : null;
     }
 
     public void exampleImageUpload() throws Exception {

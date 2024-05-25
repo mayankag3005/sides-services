@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Random;
 
 @Getter
@@ -15,20 +17,6 @@ import java.util.Random;
 @Entity
 @Data
 public class Post {
-
-    public Post() {}
-
-    public Post(Long userId, String description, Timestamp createdTs, String postType, String timeType, String postStartTs, String postEndTs, String location, char onlyForWomen) {
-        this.description = description;
-        this.userId = userId;
-        this.createdTs = createdTs;
-        this.postType = postType;
-        this.timeType = timeType;
-        this.postStartTs = postStartTs;
-        this.postEndTs = postEndTs;
-        this.location = location;
-        this.onlyForWomen = onlyForWomen;
-    }
 
     @Id
     private Long postId;
@@ -52,23 +40,25 @@ public class Post {
     private char onlyForWomen;
 
 //    private ArrayList<Image> images;
-//
+
 //    private ArrayList<Video> videos;
 
-//    private ArrayList<Tag> tags;
-//
+    private String[] tags;
+
 //    private ArrayList<Hashtag> hashtags;
-//
+
 //    private ArrayList<Like> likes;
-//
+
 //    private ArrayList<Comment> comments;
-//
+
 //    private ArrayList<Friend> interestedUsers;
-
-
 
     public Long getPostId() {
         return postId;
+    }
+
+    public void setPostId() {
+        this.postId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
     }
 
     public String getDescription() {
@@ -77,6 +67,10 @@ public class Post {
 
     public Timestamp getCreatedTs() {
         return createdTs;
+    }
+
+    public void setCreatedTs() {
+        this.createdTs = Timestamp.valueOf(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
     }
 
     public String getPostType() {
@@ -107,7 +101,11 @@ public class Post {
         return userId;
     }
 
-    public void setPostId() {
-        this.postId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
+    public String[] getTags() {
+        return tags;
+    }
+
+    public void setTags(String[] tags) {
+        this.tags = tags;
     }
 }

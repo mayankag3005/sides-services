@@ -1,16 +1,33 @@
 package com.socialising.services.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
+import java.io.Serializable;
+import java.text.DecimalFormat;
+import java.util.Random;
+
+@Table(name = "tag")
 @Entity
-public class Tag {
+public class Tag implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long tagId;
 
     private String tag;
+
+    public String getTag() {
+        return tag;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
+    }
+
+    public Long getTagId() {
+        return tagId;
+    }
+
+    public void setTagId() {
+        this.tagId = Long.valueOf(new DecimalFormat("000").format(new Random().nextInt(999)));
+    }
 }

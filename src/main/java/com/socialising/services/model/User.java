@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Random;
 
 @Getter
@@ -55,6 +56,30 @@ public class User {
         return this.phoneNumber;
     }
 
+    public ArrayList<Friend> getFriends() {
+        return friends;
+    }
+
+    public void setFriends(ArrayList<Friend> friends) {
+        this.friends = friends;
+    }
+
+    public Long[] getPosts() {
+        return posts;
+    }
+
+    public void setPosts(Long[] posts) {
+        this.posts = posts;
+    }
+
+    public String[] getTags() {
+        return tags;
+    }
+
+    public void setTags(String[] tags) {
+        this.tags = tags;
+    }
+
     @Id
     private Long userId;
 
@@ -66,9 +91,11 @@ public class User {
 
     private String dob;
 
-//    private ArrayList<Friend> friends;
-//
-//    private ArrayList<Post> posts;
-//
+    private ArrayList<Friend> friends;
+
+    private Long[] posts;
+
+    private String[] tags;
+
 //    private ArrayList<ConfirmedPost> reminderBucket;
 }

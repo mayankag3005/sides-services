@@ -1,11 +1,11 @@
 package com.socialising.services.controller;
 
+import com.socialising.services.model.Friend;
 import com.socialising.services.model.User;
 import com.socialising.services.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -47,6 +47,32 @@ public class UserController {
         log.info("User added to the db");
 
         return user;
+    }
+
+    @GetMapping("getFriends/{userid}")
+    public ArrayList<User> getFriendsOfUser(@PathVariable Long userid) {
+
+        if(this.userRepository.findById(userid).isPresent()) {
+            User user = this.userRepository.findById(userid).get();
+
+            ArrayList<User> friends = new ArrayList<>();
+
+            for(Friend friend : user.getFriends()) {
+                friends.add(this.userRepository.findById(friend.getUserId()).get());
+            }
+
+            return friends;
+        }
+
+        return null;
+    }
+
+    @GetMapping("getTagsofUser/{userid}")
+    public String[] getTagsofUser(@PathVariable Long userid) {
+        if(this.userRepository.findById(userid).isPresent()) {
+            return this.userRepository.findById(userid).get().getTags();
+        }
+        return null;
     }
 
 }
