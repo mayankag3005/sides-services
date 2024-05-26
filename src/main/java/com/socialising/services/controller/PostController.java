@@ -45,6 +45,17 @@ public class PostController {
         return post;
     }
 
+    @DeleteMapping("deletePost/{postid}")
+    public void deletePost(@PathVariable Long postid) {
+        if(this.postRepository.findById(postid).isPresent()) {
+            this.postRepository.deleteById(postid);
+
+            log.info("Post with Post ID: {} deleted from DB", postid);
+        } else {
+            log.info("No Post with Post Id: {} exists in DB", postid);
+        }
+    }
+
     @GetMapping("getAllPosts")
     public ArrayList<Post> getAllPosts() {
 

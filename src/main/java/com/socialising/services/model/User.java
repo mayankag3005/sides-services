@@ -11,7 +11,7 @@ import java.util.Random;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "user")
+@Table(name = "user", uniqueConstraints = { @UniqueConstraint(columnNames = { "username" }) })
 @Entity
 @Data
 public class User {
@@ -80,16 +80,131 @@ public class User {
         this.tags = tags;
     }
 
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public String getMaritalStatus() {
+        return maritalStatus;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public String getEducation() {
+        return education;
+    }
+
+    public String getOccupation() {
+        return occupation;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public void setMaritalStatus(String maritalStatus) {
+        this.maritalStatus = maritalStatus;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public void setEducation(String education) {
+        this.education = education;
+    }
+
+    public void setOccupation(String occupation) {
+        this.occupation = occupation;
+    }
+
+    public String getReligion() {
+        return religion;
+    }
+
     @Id
     private Long userId;
 
+    @Column(unique=true)
     private String username;
+
+    private String firstName;
+
+    private String lastName;
 
     private String email;
 
     private String phoneNumber;
 
     private String dob;
+
+    private Integer age;
+
+    private String gender;
+
+    private String religion;
+
+    private String maritalStatus;
+
+    private String city;
+
+    private String state;
+
+    private String country;
+
+    private String education;
+
+    private String occupation;
 
     private ArrayList<Friend> friends;
 

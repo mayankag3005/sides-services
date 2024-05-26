@@ -32,9 +32,14 @@ public class UserController {
     }
 
     @GetMapping("details/{id}")
-    public Optional<User> getUserById(@PathVariable Long id) {
+    public User getUserById(@PathVariable Long id) {
 
-        return this.userRepository.findById(id);
+        if(this.userRepository.findById(id).isPresent()) {
+            return this.userRepository.findById(id).get();
+        }
+
+        log.info("No user present in DB with userid: {}", id);
+        return null;
     }
 
     @PostMapping("addUser")
@@ -42,11 +47,26 @@ public class UserController {
 
         user.setUserId();
 
-        this.userRepository.save(user);
+        try {
+            this.userRepository.save(user);
+            log.info("User added to the db");
+            return user;
+        } catch (Exception e) {
+            log.info(e.getMessage());
+            return null;
+        }
 
-        log.info("User added to the db");
+    }
 
-        return user;
+    @DeleteMapping("deleteUser/{userid}")
+    public void deleteUser(@PathVariable Long userid) {
+        if(this.userRepository.findById(userid).isPresent()) {
+            this.userRepository.deleteById(userid);
+
+            log.info("User deleted from DB");
+        } else {
+            log.info("No user with this userid present in DB");
+        }
     }
 
     @GetMapping("getFriends/{userid}")

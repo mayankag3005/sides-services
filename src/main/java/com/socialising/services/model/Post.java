@@ -43,6 +43,8 @@ public class Post {
 
 //    private ArrayList<Video> videos;
 
+//    private ArrayList<Gif> gifs;
+
     private String[] tags;
 
 //    private ArrayList<Hashtag> hashtags;
