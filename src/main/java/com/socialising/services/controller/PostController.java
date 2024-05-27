@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("/post/")
@@ -62,6 +64,69 @@ public class PostController {
         log.info("Total number of posts: {}", this.postRepository.count());
 
         return (ArrayList<Post>) this.postRepository.findAll();
+    }
+
+    @PostMapping("interestedUserRequest/{postid}/{userid}")
+    public int postUserRequest(@PathVariable("postid") Long postid, @PathVariable("userid") Long userid) {
+        if(this.postRepository.findById(postid).isPresent()) {
+
+            Post post = this.postRepository.findById(postid).get();
+
+            long[] interestedUsers = post.getInterestedUsers() ;
+
+            log.info("Interested Users before: {}", interestedUsers);
+
+            if(Arrays.asList(interestedUsers).contains(userid)) {
+                log.info("User {} exists in Interested Users list for Post {}", userid, postid);
+
+                return interestedUsers.length;
+            } else {
+                if(interestedUsers == null) {
+
+                    interestedUsers = new long[] {userid};
+
+                } else {
+                    int intLen = interestedUsers.length;
+                    long[] newInterestedUsers = new long[intLen + 1];
+
+                    for (int i = 0; i < intLen ; i++)
+                        newInterestedUsers[i] = interestedUsers[i];
+
+                    newInterestedUsers[intLen] = userid;
+                    interestedUsers = newInterestedUsers;
+                }
+
+                post.setInterestedUsers(interestedUsers);
+
+                this.postRepository.save(post);
+
+                log.info("Interested Users for Post: {} are {}", postid, interestedUsers);
+
+                return interestedUsers.length;
+            }
+        }
+
+        log.info("No such post exist with Post Id: {}", postid);
+        return -1;
+    }
+
+    @GetMapping("getInterestedUsers/{postid}")
+    public long[] getInterestedUsers(@PathVariable Long postid) {
+        if(this.postRepository.findById(postid).isPresent()) {
+
+            long[] interestedUsers = this.postRepository.findById(postid).get().getInterestedUsers();
+
+            if(interestedUsers == null) {
+                log.info("No Interested Users for Post {}", postid);
+            } else {
+                log.info("Interested Users for Post {} are {}", postid, interestedUsers.length);
+            }
+
+            return interestedUsers;
+        }
+
+        log.info("No Post with Post ID: {}", postid);
+        return null;
     }
 
     @GetMapping("getPost/{id}")

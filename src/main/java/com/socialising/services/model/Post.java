@@ -53,7 +53,7 @@ public class Post {
 
 //    private ArrayList<Comment> comments;
 
-//    private ArrayList<Friend> interestedUsers;
+    private long[] interestedUsers;
 
     public Long getPostId() {
         return postId;
@@ -109,5 +109,13 @@ public class Post {
 
     public void setTags(String[] tags) {
         this.tags = tags;
+    }
+
+    public long[] getInterestedUsers() {
+        return interestedUsers;
+    }
+
+    public void setInterestedUsers(long[] interestedUsers) {
+        this.interestedUsers = interestedUsers;
     }
 }
