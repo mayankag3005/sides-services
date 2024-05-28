@@ -37,6 +37,8 @@ dependencies {
 	implementation 'org.springframework.security:spring-security-config:6.2.4'
 	// https://mvnrepository.com/artifact/jakarta.servlet/jakarta.servlet-api
 	compileOnly 'jakarta.servlet:jakarta.servlet-api:6.1.0-M2'
+	// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
+	implementation 'org.apache.commons:commons-lang3:3.14.0'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

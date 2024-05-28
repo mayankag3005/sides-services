@@ -7,7 +7,5 @@ public class ConfirmedPost {
 
     private Long postId;
 
-    private Timestamp meetingTs;    // Time fixed to meet
-
     private ArrayList<Friend> confirmedUsers;
 }

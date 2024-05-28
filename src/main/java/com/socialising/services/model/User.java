@@ -172,6 +172,14 @@ public class User {
         return religion;
     }
 
+    public Long[] getReminderPosts() {
+        return reminderPosts;
+    }
+
+    public void setReminderPosts(Long[] reminderPosts) {
+        this.reminderPosts = reminderPosts;
+    }
+
     @Id
     private Long userId;
 
@@ -212,5 +220,5 @@ public class User {
 
     private String[] tags;
 
-//    private ArrayList<ConfirmedPost> reminderBucket;
+    private Long[] reminderPosts;
 }

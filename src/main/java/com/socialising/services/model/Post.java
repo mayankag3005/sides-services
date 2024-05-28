@@ -53,7 +53,9 @@ public class Post {
 
 //    private ArrayList<Comment> comments;
 
-    private long[] interestedUsers;
+    private Long[] interestedUsers;
+
+    private Long[] confirmedUsers;
 
     public Long getPostId() {
         return postId;
@@ -111,11 +113,19 @@ public class Post {
         this.tags = tags;
     }
 
-    public long[] getInterestedUsers() {
+    public Long[] getInterestedUsers() {
         return interestedUsers;
     }
 
-    public void setInterestedUsers(long[] interestedUsers) {
+    public void setInterestedUsers(Long[] interestedUsers) {
         this.interestedUsers = interestedUsers;
+    }
+
+    public Long[] getConfirmedUsers() {
+        return confirmedUsers;
+    }
+
+    public void setConfirmedUsers(Long[] confirmedUsers) {
+        this.confirmedUsers = confirmedUsers;
     }
 }

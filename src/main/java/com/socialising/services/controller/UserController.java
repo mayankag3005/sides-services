@@ -87,6 +87,23 @@ public class UserController {
         return null;
     }
 
+    @GetMapping("getReminderPosts/{userid}")
+    public Long[] getReminderPosts(@PathVariable Long userid) {
+        if(this.userRepository.findById(userid).isPresent()) {
+            Long[] reminderPosts = this.userRepository.findById(userid).get().getReminderPosts();
+
+            if(reminderPosts == null) {
+                log.info("No Reminder Posts for Post {}", userid);
+            } else {
+                log.info("Reminder Posts for User {} are {}", userid, reminderPosts.length);
+            }
+
+            return reminderPosts;
+        }
+        log.info("No user with User ID: {}", userid);
+        return null;
+    }
+
     @GetMapping("getTagsofUser/{userid}")
     public String[] getTagsofUser(@PathVariable Long userid) {
         if(this.userRepository.findById(userid).isPresent()) {

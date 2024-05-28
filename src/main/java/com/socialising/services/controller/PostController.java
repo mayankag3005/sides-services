@@ -2,9 +2,12 @@ package com.socialising.services.controller;
 
 import com.socialising.services.model.Image;
 import com.socialising.services.model.Post;
+import com.socialising.services.model.User;
 import com.socialising.services.repository.ImageRepository;
 import com.socialising.services.repository.PostRepository;
+import com.socialising.services.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,14 +27,16 @@ public class PostController {
 
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
     private final PostRepository postRepository;
+    private final UserRepository userRepository;
 
     @Autowired
     private ImageRepository imageRepository;
 
     // Inject the object of Repository using the Bean created in Repository Interface
-    public PostController(PostRepository postRepository, ImageRepository imageRepository) {
+    public PostController(PostRepository postRepository, ImageRepository imageRepository, UserRepository userRepository) {
         this.postRepository = postRepository;
         this.imageRepository = imageRepository;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("addPost")
@@ -70,31 +75,24 @@ public class PostController {
     public int postUserRequest(@PathVariable("postid") Long postid, @PathVariable("userid") Long userid) {
         if(this.postRepository.findById(postid).isPresent()) {
 
+            if(this.userRepository.findById(userid).isEmpty()) {
+                log.info("No such user {} exists. Please create account", userid);
+                return -1;
+            }
+
             Post post = this.postRepository.findById(postid).get();
 
-            long[] interestedUsers = post.getInterestedUsers() ;
+            Long[] interestedUsers = post.getInterestedUsers() ;
 
             log.info("Interested Users before: {}", interestedUsers);
 
-            if(Arrays.asList(interestedUsers).contains(userid)) {
+            if (ArrayUtils.contains(interestedUsers, userid)) {
                 log.info("User {} exists in Interested Users list for Post {}", userid, postid);
 
                 return interestedUsers.length;
             } else {
-                if(interestedUsers == null) {
 
-                    interestedUsers = new long[] {userid};
-
-                } else {
-                    int intLen = interestedUsers.length;
-                    long[] newInterestedUsers = new long[intLen + 1];
-
-                    for (int i = 0; i < intLen ; i++)
-                        newInterestedUsers[i] = interestedUsers[i];
-
-                    newInterestedUsers[intLen] = userid;
-                    interestedUsers = newInterestedUsers;
-                }
+                interestedUsers = ArrayUtils.add(interestedUsers, userid);
 
                 post.setInterestedUsers(interestedUsers);
 
@@ -111,10 +109,10 @@ public class PostController {
     }
 
     @GetMapping("getInterestedUsers/{postid}")
-    public long[] getInterestedUsers(@PathVariable Long postid) {
+    public Long[] getInterestedUsers(@PathVariable Long postid) {
         if(this.postRepository.findById(postid).isPresent()) {
 
-            long[] interestedUsers = this.postRepository.findById(postid).get().getInterestedUsers();
+            Long[] interestedUsers = this.postRepository.findById(postid).get().getInterestedUsers();
 
             if(interestedUsers == null) {
                 log.info("No Interested Users for Post {}", postid);
@@ -125,6 +123,82 @@ public class PostController {
             return interestedUsers;
         }
 
+        log.info("No Post with Post ID: {}", postid);
+        return null;
+    }
+
+    @PostMapping("acceptInterestedUser/{postid}/{userid}")
+    public int acceptInterestedUser(@PathVariable("postid") Long postid, @PathVariable("userid") Long userid) {
+
+        if(this.postRepository.findById(postid).isEmpty()) {
+            log.info("No such post {} exists", postid);
+            return -1;
+        }
+        if(this.userRepository.findById(userid).isEmpty()) {
+            log.info("No such user {} exists", userid);
+            return -1;
+        }
+
+        Post post = this.postRepository.findById(postid).get();
+        Long[] interestedUsers = post.getInterestedUsers();
+
+        if(!Arrays.asList(interestedUsers).contains(userid)) {
+            log.info("User does not exists in Post interested Users list. Please raise request for the post");
+            return -1;
+        }
+        else {
+            // delete userid from interestedUsers array
+            interestedUsers = ArrayUtils.removeElement(interestedUsers, userid);
+            log.info("User {} deleted from the Post {} interested Users list", userid, postid);
+        }
+
+        Long[] confirmedUsers = post.getConfirmedUsers();
+
+        if(ArrayUtils.contains(confirmedUsers, userid)) {
+            log.info("user {} already exists in confirmed users list for post{}. Check again", userid, postid);
+        }
+        else {
+            // Add userid to confirmedUsers array
+            confirmedUsers = ArrayUtils.add(confirmedUsers, userid);
+            log.info("User {} added to Post {} confirmed Users List. See you soon fella!!", userid, postid);
+        }
+
+        User user = this.userRepository.findById(userid).get();
+        Long[] reminderPosts = user.getReminderPosts();
+
+        if(ArrayUtils.contains(reminderPosts, postid)) {
+            log.info("Post {} already exists in User {} reminder bucket list of posts!!", postid, userid);
+        }
+        else {
+            // Add post to user's reminder posts list
+            reminderPosts = ArrayUtils.add(reminderPosts, postid);
+            log.info("Post {} added to User {} reminder Posts list", postid, userid);
+        }
+
+        post.setInterestedUsers(interestedUsers);
+        post.setConfirmedUsers(confirmedUsers);
+        user.setReminderPosts(reminderPosts);
+
+        this.postRepository.save(post);
+        this.userRepository.save(user);
+
+        log.info("For Post {}, added user {} to Confirmed Users list {}, removed from Interested Users {}, so the confirmed posts are {}", postid, userid, confirmedUsers, interestedUsers, reminderPosts);
+        return 1;
+    }
+
+    @GetMapping("getConfirmedUsers/{postid}")
+    public Long[] getConfirmedUsers(@PathVariable Long postid) {
+        if(this.postRepository.findById(postid).isPresent()) {
+            Long[] confirmedUsers = this.postRepository.findById(postid).get().getConfirmedUsers();
+
+            if(confirmedUsers == null) {
+                log.info("No Confirmed Users for Post {}", postid);
+            } else {
+                log.info("Confirmed Users for Post {} are {}", postid, confirmedUsers.length);
+            }
+
+            return confirmedUsers;
+        }
         log.info("No Post with Post ID: {}", postid);
         return null;
     }
