@@ -18,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 @RestController
 @RequestMapping("/post/")
@@ -186,6 +185,27 @@ public class PostController {
         return 1;
     }
 
+    @PostMapping("rejectInterestedUser/{postid}/{userid}")
+    public int rejectInterestedUser(@PathVariable("postid") Long postid, @PathVariable("userid") Long userid) {
+        if(this.postRepository.findById(postid).isEmpty()) {
+            log.info("No Post with Post ID {} in DB", postid);
+            return -1;
+        }
+        if(this.userRepository.findById(userid).isEmpty()) {
+            log.info("No user with User ID {} in DB", userid);
+            return -1;
+        }
+
+        Post post = this.postRepository.findById(postid).get();
+        Long[] interestedUsers = post.getInterestedUsers();
+        interestedUsers = ArrayUtils.removeElement(interestedUsers, userid);
+        post.setInterestedUsers(interestedUsers);
+        this.postRepository.save(post);
+
+        log.info("User {} removed from Interested Users list {}", userid, interestedUsers);
+        return 1;
+    }
+
     @GetMapping("getConfirmedUsers/{postid}")
     public Long[] getConfirmedUsers(@PathVariable Long postid) {
         if(this.postRepository.findById(postid).isPresent()) {
@@ -201,6 +221,40 @@ public class PostController {
         }
         log.info("No Post with Post ID: {}", postid);
         return null;
+    }
+
+    @DeleteMapping("deleteConfirmedUser/{postid}/{userid}")
+    public Long[] deleteConfirmedUser(@PathVariable("postid") Long postid, @PathVariable("userid") Long userid) {
+        if(this.postRepository.findById(postid).isEmpty()) {
+            log.info("No Post with Post ID {} in DB", postid);
+            return null;
+        }
+        Post post = this.postRepository.findById(postid).get();
+        if(this.userRepository.findById(userid).isEmpty()) {
+            log.info("No user with User ID {} in DB", userid);
+            return post.getConfirmedUsers();
+        }
+
+        Long[] confirmedUsers = post.getConfirmedUsers();
+        if(!ArrayUtils.contains(confirmedUsers, userid)) {
+            log.info("User {} does not exist in Confirmed Users List of Post {}", userid, postid);
+            return post.getConfirmedUsers();
+        }
+
+        confirmedUsers = ArrayUtils.removeElement(confirmedUsers, userid);
+        post.setConfirmedUsers(confirmedUsers);
+        this.postRepository.save(post);
+
+        // Delete Post from User's Reminder Posts List
+        User user = this.userRepository.findById(userid).get();
+        Long[] reminderPosts = user.getReminderPosts();
+        reminderPosts = ArrayUtils.removeElement(reminderPosts, postid);
+        user.setReminderPosts(reminderPosts);
+        this.userRepository.save(user);
+        log.info("Post {} removed from User {} Reminder Posts list", postid, userid);
+
+        log.info("User {} removed from Confirmed Users list {}", userid, confirmedUsers);
+        return post.getConfirmedUsers();
     }
 
     @GetMapping("getPost/{id}")
