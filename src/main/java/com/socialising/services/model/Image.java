@@ -7,7 +7,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "image", schema="socialise")
+@Table(name = "image", schema="socialise", uniqueConstraints = { @UniqueConstraint(columnNames = { "imageId" }) })
 @Entity
 @Data
 public class Image {
@@ -22,6 +22,7 @@ public class Image {
     }
 
     @Id
+    @Column(unique=true)
     private Long imageId;
 
     private String filename;

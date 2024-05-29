@@ -6,13 +6,15 @@ import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.Random;
 
-@Table(name = "tag")
+@Table(name = "tag", uniqueConstraints = { @UniqueConstraint(columnNames = { "tagId", "tag" }) })
 @Entity
 public class Tag implements Serializable {
 
     @Id
+    @Column(unique=true)
     private Long tagId;
 
+    @Column(unique=true)
     private String tag;
 
     public String getTag() {

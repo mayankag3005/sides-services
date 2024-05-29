@@ -31,11 +31,26 @@ public class TagController {
     @PostMapping("addTag")
     public Tag addTag(@RequestBody Tag tag) {
         tag.setTagId();
-        this.tagRepository.save(tag);
+        try {
+            this.tagRepository.save(tag);
+            log.info("Tag added to db: {}", tag.getTagId());
+            return tag;
+        } catch (Exception e) {
+            log.info(e.getMessage());
+            return null;
+        }
 
-        log.info("Tag added to db: {}", tag.getTagId());
+    }
 
-        return tag;
+    @DeleteMapping("deleteTag/{tagId}")
+    public int deleteTagById(@PathVariable Long tagId) {
+        if(this.tagRepository.findById(tagId).isEmpty()) {
+            log.info("No such tag {} exists in DB", tagId);
+            return -1;
+        }
+        this.tagRepository.deleteById(tagId);
+        log.info("Tag {} deleted from DB", tagId);
+        return 1;
     }
 
 }

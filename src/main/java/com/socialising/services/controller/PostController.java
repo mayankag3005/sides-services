@@ -43,12 +43,15 @@ public class PostController {
 
         post.setPostId();
         post.setCreatedTs();
+        try {
+            this.postRepository.save(post);
+            log.info("Post added to db");
+            return post;
+        } catch (Exception e) {
+            log.info(e.getMessage());
+            return null;
+        }
 
-        this.postRepository.save(post);
-
-        log.info("Post added to db");
-
-        return post;
     }
 
     @DeleteMapping("deletePost/{postid}")
@@ -83,7 +86,7 @@ public class PostController {
 
             Long[] interestedUsers = post.getInterestedUsers() ;
 
-            log.info("Interested Users before: {}", interestedUsers);
+            log.info("Interested Users before: {}", (Object) interestedUsers);
 
             if (ArrayUtils.contains(interestedUsers, userid)) {
                 log.info("User {} exists in Interested Users list for Post {}", userid, postid);

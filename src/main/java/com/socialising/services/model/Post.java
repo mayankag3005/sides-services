@@ -13,12 +13,13 @@ import java.util.Random;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "post")
+@Table(name = "post", uniqueConstraints = { @UniqueConstraint(columnNames = { "postId" }) })
 @Entity
 @Data
 public class Post {
 
     @Id
+    @Column(unique=true)
     private Long postId;
 
     private Long userId;
