@@ -43,6 +43,7 @@ public class PostController {
 
         post.setPostId();
         post.setCreatedTs();
+
         try {
             this.postRepository.save(post);
             log.info("Post added to db");
@@ -54,23 +55,40 @@ public class PostController {
 
     }
 
-    @DeleteMapping("deletePost/{postid}")
-    public void deletePost(@PathVariable Long postid) {
-        if(this.postRepository.findById(postid).isPresent()) {
-            this.postRepository.deleteById(postid);
-
-            log.info("Post with Post ID: {} deleted from DB", postid);
-        } else {
-            log.info("No Post with Post Id: {} exists in DB", postid);
-        }
-    }
-
     @GetMapping("getAllPosts")
     public ArrayList<Post> getAllPosts() {
 
         log.info("Total number of posts: {}", this.postRepository.count());
 
         return (ArrayList<Post>) this.postRepository.findAll();
+    }
+
+    @GetMapping("getPost/{id}")
+    public Post getPostById(@PathVariable Long id) {
+
+        return this.postRepository.findById(id).isPresent() ? this.postRepository.findById(id).get() : null;
+    }
+
+    @DeleteMapping("deletePost/{postid}")
+    public void deletePost(@PathVariable Long postid) {
+        if(this.postRepository.findById(postid).isPresent()) {
+            Long[] confirmedUsers = this.postRepository.findById(postid).get().getConfirmedUsers();
+            this.postRepository.deleteById(postid);
+            log.info("Post with Post ID: {} deleted from DB", postid);
+
+            // Delete the post from Confirmed User's Reminder Posts list
+            for(Long userid: confirmedUsers) {
+                User user = this.userRepository.findById(userid).get();
+                Long[] reminderPosts = user.getReminderPosts();
+                reminderPosts = ArrayUtils.removeElement(reminderPosts, postid);
+                user.setReminderPosts(reminderPosts);
+                this.userRepository.save(user);
+                log.info("Post {} removed from User {} reminder posts list", postid, userid);
+            }
+
+        } else {
+            log.info("No Post with Post Id: {} exists in DB", postid);
+        }
     }
 
     @PostMapping("interestedUserRequest/{postid}/{userid}")
@@ -83,23 +101,17 @@ public class PostController {
             }
 
             Post post = this.postRepository.findById(postid).get();
-
             Long[] interestedUsers = post.getInterestedUsers() ;
-
             log.info("Interested Users before: {}", (Object) interestedUsers);
 
             if (ArrayUtils.contains(interestedUsers, userid)) {
                 log.info("User {} exists in Interested Users list for Post {}", userid, postid);
-
                 return interestedUsers.length;
             } else {
 
                 interestedUsers = ArrayUtils.add(interestedUsers, userid);
-
                 post.setInterestedUsers(interestedUsers);
-
                 this.postRepository.save(post);
-
                 log.info("Interested Users for Post: {} are {}", postid, interestedUsers);
 
                 return interestedUsers.length;
@@ -258,12 +270,6 @@ public class PostController {
 
         log.info("User {} removed from Confirmed Users list {}", userid, confirmedUsers);
         return post.getConfirmedUsers();
-    }
-
-    @GetMapping("getPost/{id}")
-    public Post getPostById(@PathVariable Long id) {
-
-        return this.postRepository.findById(id).isPresent() ? this.postRepository.findById(id).get() : null;
     }
 
     public void exampleImageUpload() throws Exception {

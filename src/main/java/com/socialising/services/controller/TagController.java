@@ -53,4 +53,15 @@ public class TagController {
         return 1;
     }
 
+    @DeleteMapping("deleteTagByName/{tagName}")
+    public void deleteTagByName(@PathVariable String tagName) {
+        if (this.tagRepository.findByTagName(tagName) != null) {
+            log.info("Tag with name {} exists in DB", tagName);
+            this.tagRepository.deleteTagByName(tagName);
+        }
+        else {
+            log.info("No Tag exists with Name: {}", tagName);
+        }
+    }
+
 }
