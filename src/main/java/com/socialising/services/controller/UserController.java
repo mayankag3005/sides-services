@@ -1,6 +1,5 @@
 package com.socialising.services.controller;
 
-import com.socialising.services.model.Friend;
 import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
 import com.socialising.services.repository.PostRepository;
@@ -25,6 +24,15 @@ public class UserController {
     public UserController(UserRepository userRepository, PostRepository postRepository) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
+    }
+
+    private boolean checkUserExistInDB(Long userid) {
+        if(this.userRepository.findById(userid).isPresent()) {
+            log.info("User {} exist in DB", userid);
+            return true;
+        }
+        log.info("User {} does not exists, Please Sign Up!!", userid);
+        return false;
     }
 
     @PostMapping("addUser")
@@ -54,7 +62,7 @@ public class UserController {
     @GetMapping("details/{id}")
     public User getUserById(@PathVariable Long id) {
 
-        if(this.userRepository.findById(id).isPresent()) {
+        if(checkUserExistInDB(id)) {
             return this.userRepository.findById(id).get();
         }
 
@@ -79,7 +87,7 @@ public class UserController {
 
     @DeleteMapping("deleteUser/{userid}")
     public int deleteUser(@PathVariable Long userid) {
-        if(this.userRepository.findById(userid).isPresent()) {
+        if(checkUserExistInDB(userid)) {
             Long[] reminderPosts = this.userRepository.findById(userid).get().getReminderPosts();
             this.userRepository.deleteById(userid);
             log.info("User deleted from DB");
@@ -95,26 +103,177 @@ public class UserController {
                     log.info("user {} removed from the post {} confirmed Users list", userid, reminderPostId);
                 }
             }
+
+            // Delete User from the friends list of other users
+
             return 1;
         } else {
-            log.info("No user with this userid present in DB");
+            log.info("No user with userid {} present in DB", userid);
             return -1;
         }
+    }
+
+    // To Send the Friend Request from User {userRequestId} to User {userid}
+    @PostMapping("sendFriendRequest/{fromuserid}/{touserid}")
+    public String sendFriendRequest(@PathVariable("fromuserid") Long fromuserid, @PathVariable("touserid") Long touserid) {
+        if(!checkUserExistInDB(fromuserid)) {
+            return "User " + String.valueOf(fromuserid) + " does not exist in DB";
+        }
+
+        if(!checkUserExistInDB(touserid)) {
+            return "User {" + String.valueOf(touserid) + "} does not exist in DB";
+        }
+
+        User touser = this.userRepository.findById(touserid).get();
+        Long[] friendsOfToUser = touser.getFriends();
+
+        if(ArrayUtils.contains(friendsOfToUser, fromuserid)) {
+            log.info("User {} is already friends with User {}", fromuserid, touserid);
+            return "User {" + String.valueOf(touserid) + "} already friends with User {" + String.valueOf(fromuserid) + "}";
+        }
+
+        Long[] friendRequests = touser.getFriendRequests();
+
+        if(ArrayUtils.contains(friendRequests, fromuserid)) {
+            log.info("Friend Request is already sent from user {} to user {}", fromuserid, touserid);
+            return "Friend Request Already Sent";
+        }
+
+        // Add the user to the friend request list of the requested User
+        friendRequests = ArrayUtils.add(friendRequests, fromuserid);
+        touser.setFriendRequests(friendRequests);
+        this.userRepository.save(touser);
+        log.info("User {} added to User {}'s Friend Request list: {}", fromuserid, touserid, touser.getFriendRequests());
+
+        return "Friend request Sent";
+    }
+
+    // To Accept the Friend Request of User {userRequestId} to User {userid}
+    @PostMapping("acceptFriendRequest/{userRequestId}/{userid}")
+    public String acceptFriendRequest(@PathVariable("userRequestId") Long userRequestId, @PathVariable("userid") Long userid) {
+        if(!checkUserExistInDB(userid)) {
+            return "User " + String.valueOf(userid) + " does not exist in DB";
+        }
+
+        User user = this.userRepository.findById(userid).get();
+        Long[] friendsOfUser = user.getFriends();
+
+        if(ArrayUtils.contains(friendsOfUser, userRequestId)) {
+            log.info("User {} is already friends with User {}", userid, userRequestId);
+            return "User {" + String.valueOf(userRequestId) + "} already friends with User {" + String.valueOf(userid) + "}";
+        }
+
+        Long[] friendRequests = user.getFriendRequests();
+
+        if(!ArrayUtils.contains(friendRequests, userRequestId)) {
+            log.info("Friend Request is NOT sent from user {} to user {}", userRequestId, userid);
+            return "Friend Request NOT Sent. please send the friend request first!";
+        }
+
+        // Removing From_USER from TO_user's friend request list
+        friendRequests = ArrayUtils.removeElement(friendRequests, userRequestId);
+        user.setFriendRequests(friendRequests);
+        this.userRepository.save(user);
+
+        if(!checkUserExistInDB(userRequestId)) {
+            return "User {" + String.valueOf(userRequestId) + "} does not exist in DB. ";
+        }
+
+        // Add FROM_USER to TO_USER's friends list
+        friendsOfUser = ArrayUtils.add(friendsOfUser, userRequestId);
+        user.setFriends(friendsOfUser);
+        this.userRepository.save(user);
+
+        // Add the TO_USER to FROM_USER's friends list also
+        User fromuser = this.userRepository.findById(userRequestId).get();
+        Long[] friendsOfFromUser = fromuser.getFriends();
+        friendsOfFromUser = ArrayUtils.add(friendsOfFromUser, userid);
+        fromuser.setFriends(friendsOfFromUser);
+        this.userRepository.save(fromuser);
+
+        log.info("User {} is now Friends with {}", userid, userRequestId);
+        return "Friend request accepted";
+    }
+
+    // To Remove/Delete the Friend Request from User {userRequestId} to User {userid}
+    @DeleteMapping("deleteFriendRequest/{fromuserid}/{touserid}")
+    public String deleteFriendRequest(@PathVariable("fromuserid") Long fromuserid, @PathVariable("touserid") Long touserid) {
+
+        if(!checkUserExistInDB(touserid)) {
+            return "User {" + String.valueOf(touserid) + "} does not exist in DB";
+        }
+
+        User touser = this.userRepository.findById(touserid).get();
+        Long[] friendRequests = touser.getFriendRequests();
+
+        if(!ArrayUtils.contains(friendRequests, fromuserid)) {
+            log.info("Friend Request is NOT sent from user {} to user {}", fromuserid, touserid);
+            return "Friend Request NOT sent";
+        }
+
+        // Remove the user from the friend request list of the requested User
+        friendRequests = ArrayUtils.removeElement(friendRequests, fromuserid);
+        touser.setFriendRequests(friendRequests);
+        this.userRepository.save(touser);
+
+        log.info("User {} removed from User {}'s Friend Request list: {}", fromuserid, touserid, touser.getFriendRequests());
+        return "Friend request Rejected/Deleted";
+    }
+
+    @GetMapping("getFriendRequestUsers/{userid}")
+    public ArrayList<User> getFriendRequestUsers(@PathVariable Long userid) {
+
+        if(checkUserExistInDB(userid)) {
+            User user = this.userRepository.findById(userid).get();
+
+            if(ArrayUtils.isNotEmpty(user.getFriendRequests())) {
+                Long[] friendRequests = user.getFriendRequests();
+                ArrayList<User> userDetails = new ArrayList<>();
+                for(Long userReqId : friendRequests) {
+                    if(this.userRepository.findById(userReqId).isEmpty()) {
+                        log.info("User {} does not exist in DB", userReqId);
+                        friendRequests = ArrayUtils.removeElement(friendRequests, userReqId);
+                        log.info("User {} removed from User {}'s friends list", userReqId, userid);
+                    }
+                    else {
+                        userDetails.add(this.userRepository.findById(userReqId).get());
+                    }
+                }
+                user.setFriendRequests(friendRequests);
+                log.info("User {} has {} friend Requests: {}", userid, user.getFriendRequests().length, friendRequests);
+                return userDetails;
+            }
+            else {
+                log.info("User {} has no friend requests!!", userid);
+                return null;
+            }
+        }
+
+        return null;
     }
 
     @GetMapping("getFriends/{userid}")
     public ArrayList<User> getFriendsOfUser(@PathVariable Long userid) {
 
-        if(this.userRepository.findById(userid).isPresent()) {
+        if(checkUserExistInDB(userid)) {
             User user = this.userRepository.findById(userid).get();
 
-            if(!user.getFriends().isEmpty()) {
-                ArrayList<User> friends = new ArrayList<>();
-                for(Friend friend : user.getFriends()) {
-                    friends.add(this.userRepository.findById(friend.getUserId()).get());
+            if(ArrayUtils.isNotEmpty(user.getFriends())) {
+                Long[] friends = user.getFriends();
+                ArrayList<User> friendDetails = new ArrayList<>();
+                for(Long friendid : friends) {
+                    if(this.userRepository.findById(friendid).isEmpty()) {
+                        log.info("Friend User {} does not exist in DB", friendid);
+                        friends = ArrayUtils.removeElement(friends, friendid);
+                        log.info("friend User {} removed from user {} friends list", friendid, userid);
+                    }
+                    else {
+                        friendDetails.add(this.userRepository.findById(friendid).get());
+                    }
                 }
-
-                return friends;
+                user.setFriends(friends);
+                log.info("User {} has {} friends: {}", userid, user.getFriends().length, user.getFriends());
+                return friendDetails;
             }
             else {
                 log.info("User {} has not friends!!", userid);
@@ -125,9 +284,31 @@ public class UserController {
         return null;
     }
 
+    @GetMapping("deleteFriend/{userid}/{friendid}")
+    public int deleteFriend(@PathVariable("userid") Long userid, @PathVariable("friendid") Long friendid) {
+
+        if(checkUserExistInDB(userid)) {
+            User user = this.userRepository.findById(userid).get();
+
+            Long[] friends = user.getFriends();
+            friends = ArrayUtils.removeElement(friends, friendid);
+            user.setFriends(friends);
+            this.userRepository.save(user);
+
+            log.info("friend User {} removed from user {} friends list", friendid, userid);
+
+            if(this.userRepository.findById(friendid).isEmpty()) {
+                log.info("Friend User {} does not exist in DB", friendid);
+            }
+            return 1;
+        }
+
+        return -1;
+    }
+
     @GetMapping("getReminderPosts/{userid}")
     public Long[] getReminderPosts(@PathVariable Long userid) {
-        if(this.userRepository.findById(userid).isPresent()) {
+        if(checkUserExistInDB(userid)) {
             Long[] reminderPosts = this.userRepository.findById(userid).get().getReminderPosts();
 
             if(reminderPosts == null) {
@@ -144,8 +325,7 @@ public class UserController {
 
     @DeleteMapping("deleteReminderPost/{userid}/{postid}")
     public Long[] deleteReminderPostsOfUser(@PathVariable("userid") Long userid, @PathVariable("postid") Long postid) {
-        if(this.userRepository.findById(userid).isEmpty()) {
-            log.info("User {} does not exists, Please Sign Up!!", userid);
+        if(!checkUserExistInDB(userid)) {
             return null;
         }
         User user = this.userRepository.findById(userid).get();
@@ -189,7 +369,7 @@ public class UserController {
 
     @GetMapping("getTagsofUser/{userid}")
     public String[] getTagsofUser(@PathVariable Long userid) {
-        if(this.userRepository.findById(userid).isPresent()) {
+        if(checkUserExistInDB(userid)) {
             return this.userRepository.findById(userid).get().getTags();
         }
         return null;
@@ -197,8 +377,7 @@ public class UserController {
 
     @PutMapping("updateTagsOfUser/{userid}")
     public String[] updateTagsOfUser(@PathVariable Long userid, @RequestBody String[] newTags) {
-        if(this.userRepository.findById(userid).isEmpty()) {
-            log.info("User {} does not exist", userid);
+        if(!checkUserExistInDB(userid)) {
             return null;
         }
         User user = this.userRepository.findById(userid).get();

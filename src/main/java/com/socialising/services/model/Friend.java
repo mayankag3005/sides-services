@@ -4,11 +4,11 @@ import java.io.Serializable;
 
 public class Friend implements Serializable {
 
+    private Long userId;
+
     public Friend(Long userId) {
         this.userId = userId;
     }
-
-    private Long userId;
 
     public Long getUserId() {
         return userId;

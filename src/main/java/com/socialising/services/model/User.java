@@ -56,11 +56,11 @@ public class User {
         return this.phoneNumber;
     }
 
-    public ArrayList<Friend> getFriends() {
+    public Long[] getFriends() {
         return friends;
     }
 
-    public void setFriends(ArrayList<Friend> friends) {
+    public void setFriends(Long[] friends) {
         this.friends = friends;
     }
 
@@ -88,7 +88,7 @@ public class User {
         return lastName;
     }
 
-    public int getAge() {
+    public Integer getAge() {
         return age;
     }
 
@@ -180,6 +180,14 @@ public class User {
         this.reminderPosts = reminderPosts;
     }
 
+    public Long[] getFriendRequests() {
+        return friendRequests;
+    }
+
+    public void setFriendRequests(Long[] friendRequests) {
+        this.friendRequests = friendRequests;
+    }
+
     @Id
     @Column(unique=true)
     private Long userId;
@@ -216,7 +224,9 @@ public class User {
 
     private String occupation;
 
-    private ArrayList<Friend> friends;
+    private Long[] friendRequests;
+
+    private Long[] friends;
 
     private Long[] posts;
 
