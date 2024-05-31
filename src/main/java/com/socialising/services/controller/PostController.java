@@ -77,14 +77,17 @@ public class PostController {
             log.info("Post with Post ID: {} deleted from DB", postid);
 
             // Delete the post from Confirmed User's Reminder Posts list
-            for(Long userid: confirmedUsers) {
-                User user = this.userRepository.findById(userid).get();
-                Long[] reminderPosts = user.getReminderPosts();
-                reminderPosts = ArrayUtils.removeElement(reminderPosts, postid);
-                user.setReminderPosts(reminderPosts);
-                this.userRepository.save(user);
-                log.info("Post {} removed from User {} reminder posts list", postid, userid);
+            if(ArrayUtils.isNotEmpty(confirmedUsers)) {
+                for(Long userid: confirmedUsers) {
+                    User user = this.userRepository.findById(userid).get();
+                    Long[] reminderPosts = user.getReminderPosts();
+                    reminderPosts = ArrayUtils.removeElement(reminderPosts, postid);
+                    user.setReminderPosts(reminderPosts);
+                    this.userRepository.save(user);
+                    log.info("Post {} removed from User {} reminder posts list", postid, userid);
+                }
             }
+
 
         } else {
             log.info("No Post with Post Id: {} exists in DB", postid);

@@ -11,7 +11,7 @@ import java.util.Random;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "user", uniqueConstraints = { @UniqueConstraint(columnNames = { "username", "userId" }) })
+@Table(name = "user", uniqueConstraints = { @UniqueConstraint(columnNames = { "username", "userId", "phoneNumber" }) })
 @Entity
 @Data
 public class User {
@@ -193,6 +193,7 @@ public class User {
 
     private String email;
 
+    @Column(unique=true)
     private String phoneNumber;
 
     private String dob;

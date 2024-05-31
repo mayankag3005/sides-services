@@ -86,15 +86,16 @@ public class UserController {
             log.info("User deleted from DB");
 
             // Delete the user from reminder Posts, confirmed Users list
-            for(Long reminderPostId: reminderPosts) {
-                Post post = this.postRepository.findById(reminderPostId).get();
-                Long[] confirmedUsers = post.getConfirmedUsers();
-                confirmedUsers = ArrayUtils.removeElement(confirmedUsers, userid);
-                post.setConfirmedUsers(confirmedUsers);
-                this.postRepository.save(post);
-                log.info("user {} removed from the post {} confirmed Users list", userid, reminderPostId);
+            if(ArrayUtils.isNotEmpty(reminderPosts)) {
+                for(Long reminderPostId: reminderPosts) {
+                    Post post = this.postRepository.findById(reminderPostId).get();
+                    Long[] confirmedUsers = post.getConfirmedUsers();
+                    confirmedUsers = ArrayUtils.removeElement(confirmedUsers, userid);
+                    post.setConfirmedUsers(confirmedUsers);
+                    this.postRepository.save(post);
+                    log.info("user {} removed from the post {} confirmed Users list", userid, reminderPostId);
+                }
             }
-
             return 1;
         } else {
             log.info("No user with this userid present in DB");
