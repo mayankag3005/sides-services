@@ -88,11 +88,12 @@ public class UserController {
     @DeleteMapping("deleteUser/{userid}")
     public int deleteUser(@PathVariable Long userid) {
         if(checkUserExistInDB(userid)) {
-            Long[] reminderPosts = this.userRepository.findById(userid).get().getReminderPosts();
+            User user = this.userRepository.findById(userid).get();
             this.userRepository.deleteById(userid);
             log.info("User deleted from DB");
 
             // Delete the user from reminder Posts, confirmed Users list
+            Long[] reminderPosts = user.getReminderPosts();
             if(ArrayUtils.isNotEmpty(reminderPosts)) {
                 for(Long reminderPostId: reminderPosts) {
                     Post post = this.postRepository.findById(reminderPostId).get();
@@ -105,6 +106,17 @@ public class UserController {
             }
 
             // Delete User from the friends list of other users
+            Long[] friends = user.getFriends();
+            if(ArrayUtils.isNotEmpty(friends)) {
+                for(Long friendid: friends) {
+                    User friend = this.userRepository.findById(friendid).get();
+                    Long[] friendFriends = friend.getFriends();
+                    friendFriends = ArrayUtils.removeElement(friendFriends, userid);
+                    friend.setFriends(friendFriends);
+                    this.userRepository.save(friend);
+                    log.info("User {} removed from the Friend {} friends list", userid, friendFriends);
+                }
+            }
 
             return 1;
         } else {
@@ -170,7 +182,7 @@ public class UserController {
             return "Friend Request NOT Sent. please send the friend request first!";
         }
 
-        // Removing From_USER from TO_user's friend request list
+        // Removing FROM_USER from TO_USER's friend request list
         friendRequests = ArrayUtils.removeElement(friendRequests, userRequestId);
         user.setFriendRequests(friendRequests);
         this.userRepository.save(user);
