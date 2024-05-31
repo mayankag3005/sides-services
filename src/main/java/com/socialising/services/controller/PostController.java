@@ -59,7 +59,6 @@ public class PostController {
     public ArrayList<Post> getAllPosts() {
 
         log.info("Total number of posts: {}", this.postRepository.count());
-
         return (ArrayList<Post>) this.postRepository.findAll();
     }
 
@@ -87,7 +86,6 @@ public class PostController {
                     log.info("Post {} removed from User {} reminder posts list", postid, userid);
                 }
             }
-
 
         } else {
             log.info("No Post with Post Id: {} exists in DB", postid);

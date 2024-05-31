@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/user/")
@@ -109,13 +108,18 @@ public class UserController {
         if(this.userRepository.findById(userid).isPresent()) {
             User user = this.userRepository.findById(userid).get();
 
-            ArrayList<User> friends = new ArrayList<>();
+            if(!user.getFriends().isEmpty()) {
+                ArrayList<User> friends = new ArrayList<>();
+                for(Friend friend : user.getFriends()) {
+                    friends.add(this.userRepository.findById(friend.getUserId()).get());
+                }
 
-            for(Friend friend : user.getFriends()) {
-                friends.add(this.userRepository.findById(friend.getUserId()).get());
+                return friends;
             }
-
-            return friends;
+            else {
+                log.info("User {} has not friends!!", userid);
+                return null;
+            }
         }
 
         return null;
