@@ -16,6 +16,56 @@ import java.util.Random;
 @Data
 public class User {
 
+    @Id
+    @Column(unique=true)
+    private Long userId;
+
+    @Column(unique=true)
+    private String username;
+
+    private String firstName;
+
+    private String lastName;
+
+    private String email;
+
+    @Column(unique=true)
+    private String phoneNumber;
+
+    private String dob;
+
+    private Integer age;
+
+    private String gender;
+
+    private String religion;
+
+    private String maritalStatus;
+
+    private String city;
+
+    private String state;
+
+    private String homeCity;
+
+    private String homeState;
+
+    private String country;
+
+    private String education;
+
+    private String occupation;
+
+    private Long[] friendRequests;
+
+    private Long[] friends;
+
+    private Long[] posts;
+
+    private String[] tags;
+
+    private Long[] reminderPosts;
+
     public Long getUserId() {
         return userId;
     }
@@ -203,54 +253,4 @@ public class User {
     public void setHomeCity(String homeCity) {
         this.homeCity = homeCity;
     }
-
-    @Id
-    @Column(unique=true)
-    private Long userId;
-
-    @Column(unique=true)
-    private String username;
-
-    private String firstName;
-
-    private String lastName;
-
-    private String email;
-
-    @Column(unique=true)
-    private String phoneNumber;
-
-    private String dob;
-
-    private Integer age;
-
-    private String gender;
-
-    private String religion;
-
-    private String maritalStatus;
-
-    private String city;
-
-    private String state;
-
-    private String homeCity;
-
-    private String homeState;
-
-    private String country;
-
-    private String education;
-
-    private String occupation;
-
-    private Long[] friendRequests;
-
-    private Long[] friends;
-
-    private Long[] posts;
-
-    private String[] tags;
-
-    private Long[] reminderPosts;
 }

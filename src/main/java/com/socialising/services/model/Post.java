@@ -6,6 +6,7 @@ import lombok.*;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Random;
 
 @Getter
@@ -49,9 +50,9 @@ public class Post {
 
 //    private ArrayList<Hashtag> hashtags;
 
-//    private ArrayList<Like> likes;
+    private Long[] likes;
 
-//    private ArrayList<Comment> comments;
+    private ArrayList<Comment> comments;
 
     private Long[] interestedUsers;
 
@@ -127,5 +128,21 @@ public class Post {
 
     public void setConfirmedUsers(Long[] confirmedUsers) {
         this.confirmedUsers = confirmedUsers;
+    }
+
+    public Long[] getLikes() {
+        return likes;
+    }
+
+    public void setLikes(Long[] likes) {
+        this.likes = likes;
+    }
+
+    public ArrayList<Comment> getComments() {
+        return comments;
+    }
+
+    public void setComments(ArrayList<Comment> comments) {
+        this.comments = comments;
     }
 }
