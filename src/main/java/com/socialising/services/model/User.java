@@ -188,6 +188,22 @@ public class User {
         this.friendRequests = friendRequests;
     }
 
+    public String getHomeState() {
+        return homeState;
+    }
+
+    public void setHomeState(String homeState) {
+        this.homeState = homeState;
+    }
+
+    public String getHomeCity() {
+        return homeCity;
+    }
+
+    public void setHomeCity(String homeCity) {
+        this.homeCity = homeCity;
+    }
+
     @Id
     @Column(unique=true)
     private Long userId;
@@ -217,6 +233,10 @@ public class User {
     private String city;
 
     private String state;
+
+    private String homeCity;
+
+    private String homeState;
 
     private String country;
 
