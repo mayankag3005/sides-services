@@ -328,8 +328,8 @@ public class PostController {
         return likes;
     }
 
-    @DeleteMapping("dislikePost/{postId}/{userId}")
-    public int dislikeAPost(@PathVariable("postId") Long postId, @PathVariable("userId") Long userId) {
+    @DeleteMapping("removeAlikeOnPost/{postId}/{userId}")
+    public int removeAlikeOnPost(@PathVariable("postId") Long postId, @PathVariable("userId") Long userId) {
         if(!checkPostExistInDB(postId)) {
             return -1;
         }
@@ -351,86 +351,6 @@ public class PostController {
         this.postRepository.save(post);
 
         log.info("User {} has dis-liked the post {}, and removed from LIKES list of the Post", userId, postId);
-        return 1;
-    }
-
-    @PostMapping("addCommentOnPost/{postId}")
-    public Comment addCommentOnPost(@PathVariable("postId") Long postId, @RequestBody Comment newComment) {
-        if(!checkPostExistInDB(postId)) {
-            return null;
-        }
-
-        Long userId = newComment.getUserId();
-
-        if(!checkUserExistInDB(userId)) {
-            return null;
-        }
-
-        Post post = this.postRepository.findById(postId).get();
-        ArrayList<Comment> comments = post.getComments();
-        newComment.setCommentId();
-
-        // Add new Comment to Comments list of the post
-        if(comments == null) {
-            comments = new ArrayList<Comment>();
-            comments.add(newComment);
-        }
-        else {
-            comments.add(newComment);
-        }
-
-        post.setComments(comments);
-        this.postRepository.save(post);
-
-        log.info("New Comment [{}] has been added to Comments list of the Post {}", newComment.getDescription(), postId);
-        return newComment;
-    }
-
-    @GetMapping("getAllCommentsOnPost/{postId}")
-    public ArrayList<Comment> getAllCommentsOnPost(@PathVariable("postId") Long postId) {
-        if(!checkPostExistInDB(postId)) {
-            return null;
-        }
-
-        Post post = this.postRepository.findById(postId).get();
-        ArrayList<Comment> comments = post.getComments();
-
-        if(comments == null) {
-            log.info("No Comments has been added to the Post {}", postId);
-        }
-        else {
-            log.info("No. of Comments added to the Post {} are: {}", postId, comments.size());
-        }
-
-        return comments;
-    }
-
-    @DeleteMapping("deleteCommentOnPost/{postId}")
-    public int deleteCommentOnPost(@PathVariable("postId") Long postId, @RequestBody Comment comment) {
-        if(!checkPostExistInDB(postId)) {
-            return -1;
-        }
-
-        Long userId = comment.getUserId();
-
-        if(!checkUserExistInDB(userId)) {
-            return -1;
-        }
-
-        Post post = this.postRepository.findById(postId).get();
-        ArrayList<Comment> comments = post.getComments();
-
-        // Remove Comment to Comments list of the post
-        if(comments == null) {
-            log.info("No comments added to the Post {}", postId);
-            return 0;
-        }
-
-        comments.removeIf(comm -> comm.getCommentId().equals(comment.getCommentId()));
-        post.setComments(comments);
-        this.postRepository.save(post);
-
-        log.info("Comment [{}] has been deleted from the Comments list of the Post {}", comment.getDescription(), postId);
         return 1;
     }
 

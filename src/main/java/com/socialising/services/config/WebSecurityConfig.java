@@ -58,9 +58,11 @@ public class WebSecurityConfig {
     }
 
     private static final String[] WHITELIST = {
+            "/comment/**",
             "/post/**",
             "/user/**",
             "/tag/**",
+            "/comment/**",
             "/auth/user/**",
             "/api/client/auth/**",
             "/v2/api-docs",

@@ -52,7 +52,7 @@ public class Post {
 
     private Long[] likes;
 
-    private ArrayList<Comment> comments;
+    private Long[] comments;
 
     private Long[] interestedUsers;
 
@@ -138,11 +138,11 @@ public class Post {
         this.likes = likes;
     }
 
-    public ArrayList<Comment> getComments() {
+    public Long[] getComments() {
         return comments;
     }
 
-    public void setComments(ArrayList<Comment> comments) {
+    public void setComments(Long[] comments) {
         this.comments = comments;
     }
 }

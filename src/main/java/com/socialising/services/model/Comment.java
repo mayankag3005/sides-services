@@ -1,13 +1,20 @@
 package com.socialising.services.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.Random;
 
-public class Comment implements Serializable {
+@Table(name = "comment", schema="socialise", uniqueConstraints = { @UniqueConstraint(columnNames = { "commentId" }) })
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Comment {
 
     @Id
     @Column(unique=true)
@@ -17,7 +24,7 @@ public class Comment implements Serializable {
 
     private String description;
 
-//    private Long[] commentLikes;
+    private Long[] commentLikes;
 
     public Long getCommentId() {
         return commentId;
@@ -43,11 +50,11 @@ public class Comment implements Serializable {
         this.description = description;
     }
 
-//    public Long[] getCommentLikes() {
-//        return commentLikes;
-//    }
-//
-//    public void setCommentLikes(Long[] commentLikes) {
-//        this.commentLikes = commentLikes;
-//    }
+    public Long[] getCommentLikes() {
+        return commentLikes;
+    }
+
+    public void setCommentLikes(Long[] commentLikes) {
+        this.commentLikes = commentLikes;
+    }
 }
