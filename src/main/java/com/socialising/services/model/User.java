@@ -66,13 +66,13 @@ public class User {
 
     private Long[] reminderPosts;
 
-//    public Long getUserId() {
-//        return userId;
-//    }
-
     public void setUserId() {
         this.userId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
     }
+
+//    public Long getUserId() {
+//        return userId;
+//    }
 
 //    public String getUsername() {
 //        return username;

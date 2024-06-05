@@ -21,6 +21,10 @@ public class Tag implements Serializable {
     @Column(unique=true)
     private String tag;
 
+    public void setTagId() {
+        this.tagId = Long.valueOf(new DecimalFormat("000").format(new Random().nextInt(999)));
+    }
+
 //    public String getTag() {
 //        return tag;
 //    }
@@ -33,7 +37,5 @@ public class Tag implements Serializable {
 //        return tagId;
 //    }
 
-    public void setTagId() {
-        this.tagId = Long.valueOf(new DecimalFormat("000").format(new Random().nextInt(999)));
-    }
+
 }

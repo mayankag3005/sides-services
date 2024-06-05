@@ -58,13 +58,14 @@ public class Post {
 
     private Long[] confirmedUsers;
 
-//    public Long getPostId() {
-//        return postId;
-//    }
 
     public void setPostId() {
         this.postId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
     }
+
+//    public Long getPostId() {
+//        return postId;
+//    }
 
 //    public String getDescription() {
 //        return description;
