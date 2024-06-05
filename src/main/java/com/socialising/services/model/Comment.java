@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
+//import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.Random;
 
@@ -26,35 +26,35 @@ public class Comment {
 
     private Long[] commentLikes;
 
-    public Long getCommentId() {
-        return commentId;
-    }
+//    public Long getCommentId() {
+//        return commentId;
+//    }
 
     public void setCommentId() {
         this.commentId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
     }
 
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Long[] getCommentLikes() {
-        return commentLikes;
-    }
-
-    public void setCommentLikes(Long[] commentLikes) {
-        this.commentLikes = commentLikes;
-    }
+//    public Long getUserId() {
+//        return userId;
+//    }
+//
+//    public void setUserId(Long userId) {
+//        this.userId = userId;
+//    }
+//
+//    public String getDescription() {
+//        return description;
+//    }
+//
+//    public void setDescription(String description) {
+//        this.description = description;
+//    }
+//
+//    public Long[] getCommentLikes() {
+//        return commentLikes;
+//    }
+//
+//    public void setCommentLikes(Long[] commentLikes) {
+//        this.commentLikes = commentLikes;
+//    }
 }

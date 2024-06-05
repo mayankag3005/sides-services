@@ -12,14 +12,14 @@ import lombok.*;
 @Data
 public class Image {
 
-    public Image() {}
+//    public Image() {}
 
-    public Image(Long imageId, byte[] data, String mimeType, String filename) {
-        this.imageId = imageId;
-        this.data = data;
-        this.mimeType = mimeType;
-        this.filename = filename;
-    }
+//    public Image(Long imageId, byte[] data, String mimeType, String filename) {
+//        this.imageId = imageId;
+//        this.data = data;
+//        this.mimeType = mimeType;
+//        this.filename = filename;
+//    }
 
     @Id
     @Column(unique=true)

@@ -11,7 +11,7 @@ import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/tag/")
-@Slf4j
+//@Slf4j
 public class TagController {
 
     private static final Logger log = LoggerFactory.getLogger(TagController.class);

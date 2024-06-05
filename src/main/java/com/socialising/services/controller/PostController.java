@@ -23,7 +23,7 @@ import java.util.Arrays;
 
 @RestController
 @RequestMapping("/post/")
-@Slf4j
+//@Slf4j
 public class PostController {
 
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
@@ -354,20 +354,20 @@ public class PostController {
         return 1;
     }
 
-    public void exampleImageUpload() throws Exception {
-        var image = new Image(678L, Files.readAllBytes(Paths.get("backgate college.jpeg")) , "image/jpeg", "backgate college.jpeg");
-
-        System.out.println("Image created not saved: " + image + ", count: " + this.imageRepository.count());
-        this.imageRepository.save(image);
-
-        System.out.println("Image saved: " + "count: " + this.imageRepository.count());
-    }
-
-    @GetMapping("getImage")
-    public ResponseEntity getImage() throws Exception {
-        System.out.println("image request received");
-        exampleImageUpload();
-
-        return ResponseEntity.ok(this.imageRepository.findAll());
-    }
+//    public void exampleImageUpload() throws Exception {
+//        var image = new Image(678L, Files.readAllBytes(Paths.get("backgate college.jpeg")) , "image/jpeg", "backgate college.jpeg");
+//
+//        System.out.println("Image created not saved: " + image + ", count: " + this.imageRepository.count());
+//        this.imageRepository.save(image);
+//
+//        System.out.println("Image saved: " + "count: " + this.imageRepository.count());
+//    }
+//
+//    @GetMapping("getImage")
+//    public ResponseEntity getImage() throws Exception {
+//        System.out.println("image request received");
+//        exampleImageUpload();
+//
+//        return ResponseEntity.ok(this.imageRepository.findAll());
+//    }
 }

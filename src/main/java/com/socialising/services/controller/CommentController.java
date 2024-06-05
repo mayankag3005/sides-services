@@ -16,7 +16,7 @@ import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/comment/")
-@Slf4j
+//@Slf4j
 public class CommentController {
 
     @Autowired

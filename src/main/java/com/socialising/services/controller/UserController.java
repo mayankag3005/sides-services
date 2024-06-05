@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/user/")
-@Slf4j
+//@Slf4j
 public class UserController {
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
@@ -51,6 +51,7 @@ public class UserController {
 
     }
 
+    // Get All the Users
     @GetMapping("getAllUserDetails")
     public ArrayList<User> getAllUserDetails() {
 
@@ -59,6 +60,7 @@ public class UserController {
         return (ArrayList<User>) this.userRepository.findAll();
     }
 
+    // Get user by ID
     @GetMapping("details/{id}")
     public User getUserById(@PathVariable Long id) {
 
@@ -70,6 +72,7 @@ public class UserController {
         return null;
     }
 
+    // Get user by Phone Number
     @GetMapping("getUserByPhoneNumber/{phonenumber}")
     public User getUserByPhoneNumber(@PathVariable String phonenumber) {
         try {

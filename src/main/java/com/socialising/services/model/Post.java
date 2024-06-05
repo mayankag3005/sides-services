@@ -58,91 +58,91 @@ public class Post {
 
     private Long[] confirmedUsers;
 
-    public Long getPostId() {
-        return postId;
-    }
+//    public Long getPostId() {
+//        return postId;
+//    }
 
     public void setPostId() {
         this.postId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public Timestamp getCreatedTs() {
-        return createdTs;
-    }
-
+//    public String getDescription() {
+//        return description;
+//    }
+//
+//    public Timestamp getCreatedTs() {
+//        return createdTs;
+//    }
+//
     public void setCreatedTs() {
         this.createdTs = Timestamp.valueOf(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
     }
-
-    public String getPostType() {
-        return postType;
-    }
-
-    public String getTimeType() {
-        return timeType;
-    }
-
-    public String getPostStartTs() {
-        return postStartTs;
-    }
-
-    public String getPostEndTs() {
-        return postEndTs;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public char getOnlyForWomen() {
-        return onlyForWomen;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public String[] getTags() {
-        return tags;
-    }
-
-    public void setTags(String[] tags) {
-        this.tags = tags;
-    }
-
-    public Long[] getInterestedUsers() {
-        return interestedUsers;
-    }
-
-    public void setInterestedUsers(Long[] interestedUsers) {
-        this.interestedUsers = interestedUsers;
-    }
-
-    public Long[] getConfirmedUsers() {
-        return confirmedUsers;
-    }
-
-    public void setConfirmedUsers(Long[] confirmedUsers) {
-        this.confirmedUsers = confirmedUsers;
-    }
-
-    public Long[] getLikes() {
-        return likes;
-    }
-
-    public void setLikes(Long[] likes) {
-        this.likes = likes;
-    }
-
-    public Long[] getComments() {
-        return comments;
-    }
-
-    public void setComments(Long[] comments) {
-        this.comments = comments;
-    }
+//
+//    public String getPostType() {
+//        return postType;
+//    }
+//
+//    public String getTimeType() {
+//        return timeType;
+//    }
+//
+//    public String getPostStartTs() {
+//        return postStartTs;
+//    }
+//
+//    public String getPostEndTs() {
+//        return postEndTs;
+//    }
+//
+//    public String getLocation() {
+//        return location;
+//    }
+//
+//    public char getOnlyForWomen() {
+//        return onlyForWomen;
+//    }
+//
+//    public Long getUserId() {
+//        return userId;
+//    }
+//
+//    public String[] getTags() {
+//        return tags;
+//    }
+//
+//    public void setTags(String[] tags) {
+//        this.tags = tags;
+//    }
+//
+//    public Long[] getInterestedUsers() {
+//        return interestedUsers;
+//    }
+//
+//    public void setInterestedUsers(Long[] interestedUsers) {
+//        this.interestedUsers = interestedUsers;
+//    }
+//
+//    public Long[] getConfirmedUsers() {
+//        return confirmedUsers;
+//    }
+//
+//    public void setConfirmedUsers(Long[] confirmedUsers) {
+//        this.confirmedUsers = confirmedUsers;
+//    }
+//
+//    public Long[] getLikes() {
+//        return likes;
+//    }
+//
+//    public void setLikes(Long[] likes) {
+//        this.likes = likes;
+//    }
+//
+//    public Long[] getComments() {
+//        return comments;
+//    }
+//
+//    public void setComments(Long[] comments) {
+//        this.comments = comments;
+//    }
 }
