@@ -6,7 +6,6 @@ import lombok.*;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Random;
 
 @Getter
@@ -63,6 +62,10 @@ public class Post {
         this.postId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
     }
 
+    public void setCreatedTs() {
+        this.createdTs = Timestamp.valueOf(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+    }
+
 //    public Long getPostId() {
 //        return postId;
 //    }
@@ -74,10 +77,6 @@ public class Post {
 //    public Timestamp getCreatedTs() {
 //        return createdTs;
 //    }
-//
-    public void setCreatedTs() {
-        this.createdTs = Timestamp.valueOf(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
-    }
 //
 //    public String getPostType() {
 //        return postType;

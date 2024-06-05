@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Random;
 
 @Getter
