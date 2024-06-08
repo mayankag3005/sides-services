@@ -13,13 +13,13 @@ public class AuthRequest implements Serializable {
 
     private String otp;
 
-    private String phoneNo;
+    private String phoneNumber;
 
-    public String getPhoneNo() {
-        return phoneNo;
-    }
-
-    public String getOtp() {
-        return otp;
-    }
+//    public String getPhoneNo() {
+//        return phoneNo;
+//    }
+//
+//    public String getOtp() {
+//        return otp;
+//    }
 }

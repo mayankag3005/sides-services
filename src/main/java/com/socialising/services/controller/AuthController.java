@@ -4,10 +4,12 @@ import com.socialising.services.model.AuthRequest;
 import com.socialising.services.service.OtpService;
 import com.socialising.services.service.UserDetailsService;
 import com.socialising.services.util.JwtUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.web.bind.annotation.*;
 
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,6 +33,8 @@ public class AuthController {
     @Autowired
     private OtpService otpService;
 
+    private static final Logger log = LoggerFactory.getLogger(PostController.class);
+
     @GetMapping("requestOtp/{phoneNo}")
     public Map<String, Object> getOtp(@PathVariable String phoneNo) {
         Map<String, Object> returnMap = new HashMap<>();
@@ -48,18 +52,30 @@ public class AuthController {
         return returnMap;
     }
 
-    @PostMapping("verifyOtp/")
+    @GetMapping("/getOtp/{phoneNumber}")
+    public String getCachedOtp(@PathVariable String phoneNumber) {
+        return otpService.getCacheOtp(phoneNumber);
+    }
+
+    @PostMapping("verifyOtp")
     public Map<String, Object> verifyOtp(@RequestBody AuthRequest authenticationRequest) {
         Map<String, Object> returnMap = new HashMap<>();
 
         try {
-            if(authenticationRequest.getOtp().equals(otpService.getCacheOtp(authenticationRequest.getPhoneNo()))) {
+            String phoneNumber = authenticationRequest.getPhoneNumber();
+            String authOtp = authenticationRequest.getOtp();
+            log.info("Phone Number: {} has Auth OTP: {}", phoneNumber, authOtp);
+
+            String cachedOtp = otpService.getCacheOtp(phoneNumber);
+            log.info("Phone Number: {} has Cached OTP: {}", phoneNumber, cachedOtp);
+
+            if(authOtp.equals(cachedOtp)) {
                 String jwtToken = createAuthenticationToken(authenticationRequest);
 
                 returnMap.put("status", "success");
                 returnMap.put("message", "OTP Verified Successfully");
                 returnMap.put("jwt", jwtToken);
-                otpService.clearOtp(authenticationRequest.getPhoneNo());
+                otpService.clearOtp(authenticationRequest.getPhoneNumber());
             } else {
                 returnMap.put("status", "success");
                 returnMap.put("message", "OTP is either expired or incorrect");
@@ -74,12 +90,12 @@ public class AuthController {
 
     public String createAuthenticationToken(AuthRequest authenticationRequest) throws Exception {
         try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getPhoneNo(), ""));
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getPhoneNumber(), ""));
         } catch (BadCredentialsException e) {
             throw new Exception("Incorrect Username or Password", e);
         }
 
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getPhoneNo());
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getPhoneNumber());
 
         return jwtTokenUtil.generateToken(userDetails);
     }
