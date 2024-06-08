@@ -77,6 +77,9 @@ public class CommentService {
         // Set a unique comment id
         newComment.setCommentId();
 
+        // Set Post ID
+        newComment.setPostId(postId);
+
         // Add New comment to Comment DB
         this.commentRepository.save(newComment);
 
