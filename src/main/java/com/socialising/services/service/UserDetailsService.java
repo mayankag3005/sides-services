@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class UserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
@@ -140,6 +141,27 @@ public class UserDetailsService implements org.springframework.security.core.use
             log.info("No user with userid {} present in DB", userid);
             return -1;
         }
+    }
+
+    // Search User by Word as Usernames
+    public List<User> searchUserByWord(String word) {
+
+        return this.userRepository.searchUserByWord(word);
+    }
+
+    // Search User by Tag
+    public List<User> searchUserByTag(String tag) {
+
+        List<User> allUsers = this.userRepository.findAll();
+        List<User> filteredUsers = new ArrayList<>();
+        for(User user : allUsers) {
+            if(ArrayUtils.contains(user.getTags(), tag)) {
+                filteredUsers.add(user);
+            }
+        }
+
+        log.info("No. of users matching tag: {} are {}", tag, filteredUsers.size());
+        return filteredUsers;
     }
 
     // To Send the Friend Request from User {userRequestId} to User {userid}

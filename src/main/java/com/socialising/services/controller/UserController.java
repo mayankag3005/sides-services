@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/user/")
@@ -93,7 +94,7 @@ public class UserController {
         return this.userDetailsService.getUserByPhoneNumber(phonenumber);
     }
 
-
+    // DELETE User by ID
     @DeleteMapping("deleteUser/{userid}")
     public int deleteUser(@PathVariable Long userid) {
 //        if(checkUserExistInDB(userid)) {
@@ -133,6 +134,18 @@ public class UserController {
 //            return -1;
 //        }
         return this.userDetailsService.deleteUser(userid);
+    }
+
+    //Search User by Word as username
+    @GetMapping("searchUsersByName/{word}")
+    public List<User> searchUserByWord(@PathVariable String word) {
+        return this.userDetailsService.searchUserByWord(word);
+    }
+
+    //Search User by Tag
+    @GetMapping("searchUsersByTag/{tag}")
+    public List<User> searchUserByTag(@PathVariable String tag) {
+        return this.userDetailsService.searchUserByTag(tag);
     }
 
     // To Send the Friend Request from User {userRequestId} to User {userid}
