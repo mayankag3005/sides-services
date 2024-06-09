@@ -24,6 +24,8 @@ public class User {
 
     private String password;
 
+    private Long userDPId;
+
     private String firstName;
 
     private String lastName;

@@ -28,40 +28,14 @@ import java.util.Arrays;
 public class PostController {
 
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
-//    private final PostRepository postRepository;
-//    private final UserRepository userRepository;
-
-//    @Autowired
-//    private ImageRepository imageRepository;
 
     @Autowired
     private final PostService postService;
 
     // Inject the object of Repository using the Bean created in Repository Interface
     public PostController(PostService postService) {
-//        this.postRepository = postRepository;
-//        this.imageRepository = imageRepository;
-//        this.userRepository = userRepository;
         this.postService = postService;
     }
-
-//    private boolean checkPostExistInDB(Long postId) {
-//        if(this.postRepository.findById(postId).isPresent()) {
-//            log.info("Post {} exist in DB", postId);
-//            return true;
-//        }
-//        log.info("Post {} does not exist in DB", postId);
-//        return false;
-//    }
-//
-//    private boolean checkUserExistInDB(Long userId) {
-//        if(this.userRepository.findById(userId).isPresent()) {
-//            log.info("User {} exist in DB", userId);
-//            return true;
-//        }
-//        log.info("User {} does not exists, Please Sign Up!!", userId);
-//        return false;
-//    }
 
     @PostMapping("addPost")
     public Post addPost(@RequestBody Post post) {
@@ -84,16 +58,12 @@ public class PostController {
     @GetMapping("getAllPosts")
     public ArrayList<Post> getAllPosts() {
 
-//        log.info("Total number of posts: {}", this.postRepository.count());
-//        return (ArrayList<Post>) this.postRepository.findAll();
-
         return this.postService.getAllPosts();
     }
 
     @GetMapping("getPost/{id}")
     public Post getPostById(@PathVariable Long id) {
 
-//        return checkPostExistInDB(id) ? this.postRepository.findById(id).get() : null;
         return this.postService.getPostById(id);
     }
 
@@ -150,19 +120,7 @@ public class PostController {
 
     @GetMapping("getInterestedUsers/{postid}")
     public Long[] getInterestedUsers(@PathVariable Long postid) {
-//        if(checkPostExistInDB(postid)) {
-//
-//            Long[] interestedUsers = this.postRepository.findById(postid).get().getInterestedUsers();
-//
-//            if(interestedUsers == null) {
-//                log.info("No Interested Users for Post {}", postid);
-//            } else {
-//                log.info("Interested Users for Post {} are {}", postid, interestedUsers.length);
-//            }
-//
-//            return interestedUsers;
-//        }
-//        return null;
+
         return this.postService.getInterestedUsers(postid);
     }
 
@@ -248,18 +206,7 @@ public class PostController {
 
     @GetMapping("getConfirmedUsers/{postid}")
     public Long[] getConfirmedUsers(@PathVariable Long postid) {
-//        if(checkPostExistInDB(postid)) {
-//            Long[] confirmedUsers = this.postRepository.findById(postid).get().getConfirmedUsers();
-//
-//            if(confirmedUsers == null) {
-//                log.info("No Confirmed Users for Post {}", postid);
-//            } else {
-//                log.info("Confirmed Users for Post {} are {}", postid, confirmedUsers.length);
-//            }
-//
-//            return confirmedUsers;
-//        }
-//        return null;
+
         return this.postService.getConfirmedUsers(postid);
     }
 
@@ -328,21 +275,7 @@ public class PostController {
 
     @GetMapping("getAllLikesOnPost/{postId}")
     public Long[] getAllLikesOnPost(@PathVariable("postId") Long postId) {
-//        if(!checkPostExistInDB(postId)) {
-//            return null;
-//        }
-//
-//        Post post = this.postRepository.findById(postId).get();
-//        Long[] likes = post.getLikes();
-//
-//        if(ArrayUtils.isEmpty(likes)) {
-//            log.info("No LIKES given to the Post {}", postId);
-//        }
-//        else {
-//            log.info("No. of Likes given to the Post {} are: {}", postId, likes.length);
-//        }
-//
-//        return likes;
+
         return this.postService.getAllLikesOnPost(postId);
     }
 
@@ -371,6 +304,26 @@ public class PostController {
 //        log.info("User {} has dis-liked the post {}, and removed from LIKES list of the Post", userId, postId);
 //        return 1;
         return this.postService.removeAlikeOnPost(postId, userId);
+    }
+
+    @PostMapping("addHashtags/{postId}")
+    public String[] addHashtagsToPost(@PathVariable Long postId, @RequestBody String[] newHashtags) {
+        return this.postService.addHashtags(postId, newHashtags);
+    }
+
+    @GetMapping("getHashtags/{postId}")
+    public String[] getHashtagsToPost(@PathVariable Long postId) {
+        return this.postService.getHashtagsOfPost(postId);
+    }
+
+    @PutMapping("updateHashtags/{postId}")
+    public String[] updateHashtagsToPost(@PathVariable Long postId, @RequestBody String[] newHashtags) {
+        return this.postService.updateHashtags(postId, newHashtags);
+    }
+
+    @DeleteMapping("deleteHashtags/{postId}")
+    public int deleteHashtagToPost(@PathVariable Long postId, @RequestBody String hashtag) {
+        return this.postService.deleteHashtagsOfPost(postId, hashtag);
     }
 
 //    @GetMapping("getImage")

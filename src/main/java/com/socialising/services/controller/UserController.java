@@ -1,6 +1,7 @@
 package com.socialising.services.controller;
 
 //import com.socialising.services.model.Post;
+import com.socialising.services.model.Image;
 import com.socialising.services.model.User;
 import com.socialising.services.repository.PostRepository;
 import com.socialising.services.repository.UserRepository;
@@ -10,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -434,6 +436,17 @@ public class UserController {
 //
 //        return user.getTags();
         return this.userDetailsService.updateTagsOfUser(userid, newTags);
+    }
+
+    @PostMapping("addUserDP/{userId}")
+    public Image addUserDP(@PathVariable Long userId, @RequestBody MultipartFile file) throws Exception {
+        return this.userDetailsService.addUserDP(userId, file);
+    }
+
+    @GetMapping("getUserDP/{userId}")
+    public Image getImage(@PathVariable Long userId) throws Exception {
+
+        return this.userDetailsService.getUserDP(userId);
     }
 
 }

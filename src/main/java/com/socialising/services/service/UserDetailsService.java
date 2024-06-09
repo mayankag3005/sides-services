@@ -1,8 +1,10 @@
 package com.socialising.services.service;
 
 import com.socialising.services.controller.UserController;
+import com.socialising.services.model.Image;
 import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
+import com.socialising.services.repository.ImageRepository;
 import com.socialising.services.repository.PostRepository;
 import com.socialising.services.repository.UserRepository;
 import org.apache.commons.lang3.ArrayUtils;
@@ -12,24 +14,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 @Service
 public class UserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
+    private final UserRepository userRepository;
+    private final ImageRepository imageRepository;
     private final PostRepository postRepository;
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
-    public UserDetailsService(UserRepository userRepository, PostRepository postRepository) {
+    @Autowired
+    public UserDetailsService(UserRepository userRepository, PostRepository postRepository, ImageRepository imageRepository) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
+        this.imageRepository = imageRepository;
     }
 
     private boolean checkUserExistInDB(Long userid) {
@@ -38,6 +44,15 @@ public class UserDetailsService implements org.springframework.security.core.use
             return true;
         }
         log.info("User {} does not exists, Please Sign Up!!", userid);
+        return false;
+    }
+
+    private boolean checkImageExistInDB(Long imageId) {
+        if(this.imageRepository.findById(imageId).isPresent()) {
+            log.info("Image {} exist in DB", imageId);
+            return true;
+        }
+        log.info("Image {} does not exists in DB!!", imageId);
         return false;
     }
 
@@ -437,5 +452,66 @@ public class UserDetailsService implements org.springframework.security.core.use
         log.info("New Tags of user {}: {}", userid, user.getTags());
 
         return user.getTags();
+    }
+
+    // Add User Display Picture to DB
+    public Image addUserDP(Long userId, MultipartFile file) throws Exception {
+        if(!checkUserExistInDB(userId)) {
+            return null;
+        }
+
+        if(file.isEmpty()) {
+            log.info("File is empty.");
+            return null;
+        }
+
+        try {
+            // Create Image from File
+            String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+            Long imageId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
+
+            Image image = new Image(imageId, fileName, file.getContentType(), file.getBytes());
+
+            log.info("Image Id: {}", image.getImageId());
+            log.info("Image Filename: {}", image.getFilename());
+            log.info("Image Type: {}", image.getMimeType());
+
+            // Save Image to DB
+            this.imageRepository.save(image);
+
+            // Save ImageId to User
+            User user = this.userRepository.findById(userId).get();
+            user.setUserDPId(image.getImageId());
+            this.userRepository.save(user);
+
+            log.info("Image: [{}] saved for User {}", image, userId);
+
+            return image;
+        } catch (Exception e) {
+            log.info("Error Uploading Image: {}", e.getMessage());
+            return null;
+        }
+
+    }
+
+    // GET User DP
+    public Image getUserDP(Long userId) throws Exception {
+        if(!checkUserExistInDB(userId)) {
+            return null;
+        }
+
+        try {
+            Long userDpId = this.userRepository.findById(userId).get().getUserDPId();
+
+            if(!checkImageExistInDB(userDpId)) {
+                log.info("User has no DP. Please add one!");
+                return null;
+            }
+
+            return this.imageRepository.findById(userDpId).get();
+        } catch (Exception e) {
+            log.info("Error getting User DP. Please try again!! -> {}", e.getMessage());
+            return null;
+        }
     }
 }

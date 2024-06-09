@@ -349,6 +349,69 @@ public class PostService {
         return 1;
     }
 
+    // ADD Hashtags to Current Hashtags Post
+    public String[] addHashtags(Long postId, String[] newHashtags) {
+        if(!checkPostExistInDB(postId)) {
+            return null;
+        }
+
+        Post post = this.postRepository.findById(postId).get();
+
+        // Add Hashtags to current Hashtags
+        String[] hashtags = post.getHashtags();
+        hashtags = ArrayUtils.addAll(hashtags, newHashtags);
+        post.setHashtags(hashtags);
+        this.postRepository.save(post);
+
+        log.info("New Hashtags Added to post {} : {}", postId, hashtags);
+        return post.getHashtags();
+    }
+
+    // GET Hashtags of Post
+    public String[] getHashtagsOfPost(Long postId) {
+        if(!checkPostExistInDB(postId)) {
+            return null;
+        }
+
+        return this.postRepository.findById(postId).get().getHashtags();
+    }
+
+    // UPDATE Hashtags to Current Hashtags Post
+    public String[] updateHashtags(Long postId, String[] newHashtags) {
+        if(!checkPostExistInDB(postId)) {
+            return null;
+        }
+
+        Post post = this.postRepository.findById(postId).get();
+
+        // Replace Hashtags
+        String[] OldHashtags = post.getHashtags();
+        post.setHashtags(newHashtags);
+        this.postRepository.save(post);
+
+        log.info("Old Hashtags: {} of Post {} are removed", OldHashtags, postId);
+        log.info("New Hashtags {} Added to post {}", newHashtags, postId);
+        return post.getHashtags();
+    }
+
+    // DELETE Hashtag from Post
+    public int deleteHashtagsOfPost(Long postId, String hashtag) {
+        if(!checkPostExistInDB(postId)) {
+            return -1;
+        }
+
+        Post post = this.postRepository.findById(postId).get();
+
+        // Delete Hashtag
+        String[] hashtags = post.getHashtags();
+        hashtags = ArrayUtils.removeElement(hashtags, hashtag);
+        post.setHashtags(hashtags);
+        this.postRepository.save(post);
+
+        log.info("Hashtag [{}] deleted from Post {}", hashtag, postId);
+        return 1;
+    }
+
 //    public void exampleImageUpload() throws Exception {
 //        var image = new Image(678L, Files.readAllBytes(Paths.get("backgate college.jpeg")) , "image/jpeg", "backgate college.jpeg");
 //
