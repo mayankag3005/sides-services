@@ -1,30 +1,16 @@
 package com.socialising.services.controller;
 
-import com.socialising.services.model.Comment;
-import com.socialising.services.model.Image;
 import com.socialising.services.model.Post;
-import com.socialising.services.model.User;
-import com.socialising.services.repository.ImageRepository;
-import com.socialising.services.repository.PostRepository;
-import com.socialising.services.repository.UserRepository;
 import com.socialising.services.service.PostService;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
-import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 @RestController
 @RequestMapping("/post/")
-//@Slf4j
 public class PostController {
 
     private static final Logger log = LoggerFactory.getLogger(PostController.class);

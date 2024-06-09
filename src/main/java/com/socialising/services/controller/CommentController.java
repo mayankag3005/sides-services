@@ -1,13 +1,7 @@
 package com.socialising.services.controller;
 
 import com.socialising.services.model.Comment;
-import com.socialising.services.model.Post;
-import com.socialising.services.repository.CommentRepository;
-import com.socialising.services.repository.PostRepository;
-import com.socialising.services.repository.UserRepository;
 import com.socialising.services.service.CommentService;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,56 +11,16 @@ import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/comment/")
-//@Slf4j
 public class CommentController {
 
-//    @Autowired
-//    private final CommentRepository commentRepository;
-//
-//    @Autowired
-//    private final PostRepository postRepository;
-//
-//    @Autowired
-//    private final UserRepository userRepository;
-
-    @Autowired
     private final CommentService commentService;
 
+    @Autowired
     public CommentController(CommentService commentService) {
-//        this.commentRepository = commentRepository;
-//        this.postRepository = postRepository;
-//        this.userRepository = userRepository;
         this.commentService = commentService;
     }
 
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
-
-//    private boolean checkCommentExistInDB(Long commentId) {
-//        if(this.commentRepository.findById(commentId).isPresent()) {
-//            log.info("Comment {} exist in DB", commentId);
-//            return true;
-//        }
-//        log.info("Comment {} does not exists, Please Check!!", commentId);
-//        return false;
-//    }
-//
-//    private boolean checkPostExistInDB(Long postId) {
-//        if(this.postRepository.findById(postId).isPresent()) {
-//            log.info("Post {} exist in DB", postId);
-//            return true;
-//        }
-//        log.info("Post {} does not exist in DB", postId);
-//        return false;
-//    }
-//
-//    private boolean checkUserExistInDB(Long userId) {
-//        if(this.userRepository.findById(userId).isPresent()) {
-//            log.info("User {} exist in DB", userId);
-//            return true;
-//        }
-//        log.info("User {} does not exists, Please Sign Up!!", userId);
-//        return false;
-//    }
 
     @PostMapping("addCommentOnPost/{postId}")
     public Comment addCommentOnPost(@PathVariable("postId") Long postId, @RequestBody Comment newComment) {

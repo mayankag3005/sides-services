@@ -1,9 +1,7 @@
 package com.socialising.services.controller;
 
 import com.socialising.services.model.Tag;
-import com.socialising.services.repository.TagRepository;
 import com.socialising.services.service.TagService;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +11,6 @@ import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/tag/")
-//@Slf4j
 public class TagController {
 
     private static final Logger log = LoggerFactory.getLogger(TagController.class);
@@ -42,9 +39,6 @@ public class TagController {
 
     @GetMapping("getAllTags")
     public ArrayList<Tag> getAllTags() {
-//        log.info("Total number of tags: {}", this.tagRepository.count());
-//
-//        return (ArrayList<Tag>) this.tagRepository.findAll();
         return this.tagService.getAllTags();
     }
 

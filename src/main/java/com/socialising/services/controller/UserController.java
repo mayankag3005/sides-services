@@ -1,12 +1,8 @@
 package com.socialising.services.controller;
 
-//import com.socialising.services.model.Post;
 import com.socialising.services.model.Image;
 import com.socialising.services.model.User;
-import com.socialising.services.repository.PostRepository;
-import com.socialising.services.repository.UserRepository;
 import com.socialising.services.service.UserDetailsService;
-//import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +14,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/user/")
-//@Slf4j
 public class UserController {
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
@@ -29,15 +24,6 @@ public class UserController {
     public UserController(UserDetailsService userDetailsService) {
         this.userDetailsService = userDetailsService;
     }
-
-//    private boolean checkUserExistInDB(Long userid) {
-//        if(this.userRepository.findById(userid).isPresent()) {
-//            log.info("User {} exist in DB", userid);
-//            return true;
-//        }
-//        log.info("User {} does not exists, Please Sign Up!!", userid);
-//        return false;
-//    }
 
     @PostMapping("addUser")
     public User addUser(@RequestBody User user) {
@@ -60,10 +46,6 @@ public class UserController {
     @GetMapping("getAllUserDetails")
     public ArrayList<User> getAllUserDetails() {
 
-//        log.info("Total Number of users: {}", userRepository.count());
-
-//        return (ArrayList<User>) this.userRepository.findAll();
-
         return this.userDetailsService.getAllUserDetails();
     }
 
@@ -71,28 +53,13 @@ public class UserController {
     @GetMapping("details/{id}")
     public User getUserById(@PathVariable Long id) {
 
-//        if(checkUserExistInDB(id)) {
-//            return this.userRepository.findById(id).get();
-//        }
-//
-//        log.info("No user present in DB with userid: {}", id);
-//        return null;
         return this.userDetailsService.getUserById(id);
     }
 
     // Get user by Phone Number
     @GetMapping("getUserByPhoneNumber/{phonenumber}")
     public User getUserByPhoneNumber(@PathVariable String phonenumber) {
-//        try {
-//            if(this.userRepository.findByPhoneNumber(phonenumber) != null) {
-//                return this.userRepository.findByPhoneNumber(phonenumber);
-//            }
-//            log.info("No user exists with Phone Number {}", phonenumber);
-//            return null;
-//        } catch (Exception e) {
-//            log.info(e.getMessage());
-//            return null;
-//        }
+
         return this.userDetailsService.getUserByPhoneNumber(phonenumber);
     }
 
@@ -263,66 +230,12 @@ public class UserController {
     @GetMapping("getFriendRequestUsers/{userid}")
     public ArrayList<User> getFriendRequestUsers(@PathVariable Long userid) {
 
-//        if(checkUserExistInDB(userid)) {
-//            User user = this.userRepository.findById(userid).get();
-//
-//            if(ArrayUtils.isNotEmpty(user.getFriendRequests())) {
-//                Long[] friendRequests = user.getFriendRequests();
-//                ArrayList<User> userDetails = new ArrayList<>();
-//                for(Long userReqId : friendRequests) {
-//                    if(this.userRepository.findById(userReqId).isEmpty()) {
-//                        log.info("User {} does not exist in DB", userReqId);
-//                        friendRequests = ArrayUtils.removeElement(friendRequests, userReqId);
-//                        log.info("User {} removed from User {}'s friends list", userReqId, userid);
-//                    }
-//                    else {
-//                        userDetails.add(this.userRepository.findById(userReqId).get());
-//                    }
-//                }
-//                user.setFriendRequests(friendRequests);
-//                log.info("User {} has {} friend Requests: {}", userid, user.getFriendRequests().length, friendRequests);
-//                return userDetails;
-//            }
-//            else {
-//                log.info("User {} has no friend requests!!", userid);
-//                return null;
-//            }
-//        }
-//
-//        return null;
         return this.userDetailsService.getFriendRequestUsers(userid);
     }
 
     @GetMapping("getFriends/{userid}")
     public ArrayList<User> getFriendsOfUser(@PathVariable Long userid) {
 
-//        if(checkUserExistInDB(userid)) {
-//            User user = this.userRepository.findById(userid).get();
-//
-//            if(ArrayUtils.isNotEmpty(user.getFriends())) {
-//                Long[] friends = user.getFriends();
-//                ArrayList<User> friendDetails = new ArrayList<>();
-//                for(Long friendid : friends) {
-//                    if(this.userRepository.findById(friendid).isEmpty()) {
-//                        log.info("Friend User {} does not exist in DB", friendid);
-//                        friends = ArrayUtils.removeElement(friends, friendid);
-//                        log.info("friend User {} removed from user {} friends list", friendid, userid);
-//                    }
-//                    else {
-//                        friendDetails.add(this.userRepository.findById(friendid).get());
-//                    }
-//                }
-//                user.setFriends(friends);
-//                log.info("User {} has {} friends: {}", userid, user.getFriends().length, user.getFriends());
-//                return friendDetails;
-//            }
-//            else {
-//                log.info("User {} has not friends!!", userid);
-//                return null;
-//            }
-//        }
-//
-//        return null;
         return this.userDetailsService.getFriendsOfUser(userid);
     }
 
@@ -351,19 +264,7 @@ public class UserController {
 
     @GetMapping("getReminderPosts/{userid}")
     public Long[] getReminderPosts(@PathVariable Long userid) {
-//        if(checkUserExistInDB(userid)) {
-//            Long[] reminderPosts = this.userRepository.findById(userid).get().getReminderPosts();
-//
-//            if(reminderPosts == null) {
-//                log.info("No Reminder Posts for Post {}", userid);
-//            } else {
-//                log.info("Reminder Posts for User {} are {}", userid, reminderPosts.length);
-//            }
-//
-//            return reminderPosts;
-//        }
-//        log.info("No user with User ID: {}", userid);
-//        return null;
+
         return this.userDetailsService.getReminderPosts(userid);
     }
 
@@ -414,10 +315,7 @@ public class UserController {
 
     @GetMapping("getTagsofUser/{userid}")
     public String[] getTagsofUser(@PathVariable Long userid) {
-//        if(checkUserExistInDB(userid)) {
-//            return this.userRepository.findById(userid).get().getTags();
-//        }
-//        return null;
+
         return this.userDetailsService.getTagsofUser(userid);
     }
 
