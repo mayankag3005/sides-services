@@ -39,6 +39,10 @@ dependencies {
 	// https://mvnrepository.com/artifact/jakarta.servlet/jakarta.servlet-api
 	compileOnly 'jakarta.servlet:jakarta.servlet-api:6.1.0-M2'
 	// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
+	// https://mvnrepository.com/artifact/org.springframework/spring-websocket
+	implementation 'org.springframework:spring-websocket:6.1.8'
+	// https://mvnrepository.com/artifact/org.springframework/spring-messaging
+	implementation 'org.springframework:spring-messaging:6.1.9'
 	implementation 'org.apache.commons:commons-lang3:3.14.0'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

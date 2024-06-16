@@ -1,5 +1,6 @@
 package com.socialising.services.model;
 
+import com.socialising.services.constants.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,6 +24,8 @@ public class User {
     private String username;
 
     private String password;
+
+    private Status status;     // to check whether is online / offline
 
     private Long userDPId;
 

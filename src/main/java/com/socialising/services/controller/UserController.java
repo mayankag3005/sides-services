@@ -1,11 +1,17 @@
 package com.socialising.services.controller;
 
+import com.socialising.services.constants.Status;
 import com.socialising.services.model.Image;
 import com.socialising.services.model.User;
 import com.socialising.services.service.UserDetailsService;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/user/")
+//@RequiredArgsConstructor
 public class UserController {
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
@@ -127,5 +134,25 @@ public class UserController {
     @GetMapping("getUserDP/{userId}")
     public Image getImage(@PathVariable Long userId) throws Exception {
         return this.userDetailsService.getUserDP(userId);
+    }
+
+    // CHAT based APIs
+    @MessageMapping("/user.addUser")
+    @SendTo("/user/public")
+    public User connectUser(@Payload User user) {
+        return this.userDetailsService.addUser(user);
+    }
+
+    @MessageMapping("/user.disconnectUser")
+    @SendTo("/user/public")
+    public User disconnect(@Payload User user) {
+        this.userDetailsService.disconnectUser(user.getUserId());
+
+        return user;
+    }
+
+    @GetMapping("/onlineUsers")
+    public ResponseEntity<List<User>> getAllOnlineUsers() {
+        return ResponseEntity.ok(this.userDetailsService.findConnectedUsers());
     }
 }

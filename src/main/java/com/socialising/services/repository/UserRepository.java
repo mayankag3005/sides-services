@@ -1,5 +1,6 @@
 package com.socialising.services.repository;
 
+import com.socialising.services.constants.Status;
 import com.socialising.services.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query(value = "SELECT * FROM socialise.user WHERE username LIKE %?1%", nativeQuery = true)
     List<User> searchUserByWord(String word);
+
+    List<User> findAllByStatus(Status status);
 
 //    @Query(value = "SELECT * FROM socialise.user WHERE %?1% IN tags", nativeQuery = true)
 //    List<User> searchUserByTag(String tag);

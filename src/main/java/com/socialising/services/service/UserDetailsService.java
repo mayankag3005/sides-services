@@ -1,5 +1,6 @@
 package com.socialising.services.service;
 
+import com.socialising.services.constants.Status;
 import com.socialising.services.controller.UserController;
 import com.socialising.services.model.Image;
 import com.socialising.services.model.Post;
@@ -7,6 +8,7 @@ import com.socialising.services.model.User;
 import com.socialising.services.repository.ImageRepository;
 import com.socialising.services.repository.PostRepository;
 import com.socialising.services.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.Random;
 
 @Service
+//@RequiredArgsConstructor
 public class UserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
 
     private final UserRepository userRepository;
@@ -73,6 +76,7 @@ public class UserDetailsService implements org.springframework.security.core.use
     public User addUser(User user) {
 
         user.setUserId();
+        user.setStatus(Status.ONLINE);
 
         try {
             this.userRepository.save(user);
@@ -513,5 +517,24 @@ public class UserDetailsService implements org.springframework.security.core.use
             log.info("Error getting User DP. Please try again!! -> {}", e.getMessage());
             return null;
         }
+    }
+
+    // CHAT Based Services for user
+
+    // to connect a User -- set status ONLINE while adding User to DB -- refer addUser()
+
+    // to disconnect user
+    public void disconnectUser(Long userId) {
+        // check for user existence in DB
+        checkUserExistInDB(userId);
+
+        User storedUser = this.userRepository.findById(userId).get();
+        storedUser.setStatus(Status.OFFLINE);
+        this.userRepository.save(storedUser);
+    }
+
+    // to find Connected users
+    public List<User> findConnectedUsers() {
+        return this.userRepository.findAllByStatus(Status.ONLINE);
     }
 }
