@@ -24,18 +24,4 @@ public class Tag implements Serializable {
     public void setTagId() {
         this.tagId = Long.valueOf(new DecimalFormat("000").format(new Random().nextInt(999)));
     }
-
-//    public String getTag() {
-//        return tag;
-//    }
-//
-//    public void setTag(String tag) {
-//        this.tag = tag;
-//    }
-//
-//    public Long getTagId() {
-//        return tagId;
-//    }
-
-
 }

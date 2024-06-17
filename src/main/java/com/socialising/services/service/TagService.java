@@ -2,6 +2,7 @@ package com.socialising.services.service;
 
 import com.socialising.services.model.Tag;
 import com.socialising.services.repository.TagRepository;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,16 +10,13 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 
 @Service
+@RequiredArgsConstructor
 public class TagService {
 
     private static final Logger log = LoggerFactory.getLogger(com.socialising.services.controller.TagController.class);
 
     @Autowired
     private final TagRepository tagRepository;
-
-    public TagService(TagRepository tagRepository) {
-        this.tagRepository = tagRepository;
-    }
 
     // Add a tag to DB
     public Tag addTag(Tag tag) {
