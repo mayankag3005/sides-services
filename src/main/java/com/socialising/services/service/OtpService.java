@@ -48,19 +48,29 @@ public class OtpService {
         log.info("To Phone Number: {} and From Phone Number: {}", to, from);
         System.out.println("OTP MESSAGE: " + otpMessage);
 
+        // SEND OTP to User Phone
 //        Twilio.init(twilioConfig.getACCOUNT_SID(), twilioConfig.getAUTH_TOKEN());
-//
 //        Message message = Message.creator(to, from, otpMessage).create();
 
         return otp;
     }
 
-    private String getRandomOtp(String phoneNumber) {
+    public String generateOtpForEmail(String email) {
+        String otp = getRandomOtp(email);
+        String otpMessage = "Dear Customer, Your OTP is " + otp + ". Use this otp to log in to the Application";
+        System.out.println("OTP MESSAGE: " + otpMessage);
+
+        // Send OTP to User Email
+
+        return otp;
+    }
+
+    private String getRandomOtp(String phoneNumberOrEmail) {
         String otp = new DecimalFormat("000000").format(new Random().nextInt(999999));
 
-        otpCache.put(phoneNumber, otp);
+        otpCache.put(phoneNumberOrEmail, otp);
         try {
-            log.info("OTP: {}, stored in Cahce: {}", otp, otpCache.get(phoneNumber));
+            log.info("OTP: {}, stored in Cache: {}", otp, otpCache.get(phoneNumberOrEmail));
         } catch (Exception e) {
             log.info("Error while getting Cached OTP: {}", e.getMessage());
         }
@@ -72,7 +82,7 @@ public class OtpService {
         try {
             return otpCache.get(key);
         } catch (Exception e) {
-            log.info("OTP Expired or Incorrect phone Number, Please generate again!!");
+            log.info("OTP Expired or Incorrect Key: {}, Please generate again!!", key);
             log.info("Error in get Cached OTP: {}", e.getMessage());
             return "";
         }

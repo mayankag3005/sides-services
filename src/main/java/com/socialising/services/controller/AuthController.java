@@ -1,102 +1,68 @@
 package com.socialising.services.controller;
 
-import com.socialising.services.model.AuthRequest;
-import com.socialising.services.service.OtpService;
-import com.socialising.services.service.UserDetailsService;
-import com.socialising.services.util.JwtUtil;
+import com.socialising.services.model.auth.AuthRequest;
+import com.socialising.services.model.auth.AuthenticationRequest;
+import com.socialising.services.model.auth.AuthenticationResponse;
+import com.socialising.services.model.auth.RegisterRequest;
+import com.socialising.services.service.AuthenticationService;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
-
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/auth/user/")
+@RequiredArgsConstructor
 public class AuthController {
 
     @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private JwtUtil jwtTokenUtil;
-
-    @Autowired
-    private UserDetailsService userDetailsService;
-
-    @Autowired
-    private OtpService otpService;
+    private final AuthenticationService authenticationService;
 
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
 
-    @GetMapping("requestOtp/{phoneNo}")
-    public Map<String, Object> getOtp(@PathVariable String phoneNo) {
-        Map<String, Object> returnMap = new HashMap<>();
-
-        try {
-            String otp = otpService.generateOtp(phoneNo);
-            returnMap.put("otp", otp);
-            returnMap.put("status", "success");
-            returnMap.put("message", "OTP Sent Successfully");
-        } catch (Exception e) {
-            returnMap.put("status", "failed");
-            returnMap.put("message", e.getMessage());
-        }
-
-        return returnMap;
+    @PostMapping("register")
+    public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(authenticationService.register(request));
     }
 
-    @GetMapping("/getOtp/{phoneNumber}")
+    // Login with username - password
+    @PostMapping("authenticate")
+    public ResponseEntity<AuthenticationResponse> register(@RequestBody AuthenticationRequest request) throws Exception {
+        return ResponseEntity.ok(authenticationService.authenticate(request));
+    }
+
+    // Login with Phone number - OTP
+    @GetMapping("requestOtp/{phoneNo}")
+    public Map<String, Object> getOtp(@PathVariable String phoneNo) {
+        return authenticationService.getOtp(phoneNo, "phoneNumber");
+    }
+
+    @GetMapping("getOtp/{phoneNumber}")
     public String getCachedOtp(@PathVariable String phoneNumber) {
-        return otpService.getCacheOtp(phoneNumber);
+        return authenticationService.getCachedOtp(phoneNumber);
     }
 
     @PostMapping("verifyOtp")
     public Map<String, Object> verifyOtp(@RequestBody AuthRequest authenticationRequest) {
-        Map<String, Object> returnMap = new HashMap<>();
-
-        try {
-            String phoneNumber = authenticationRequest.getPhoneNumber();
-            String authOtp = authenticationRequest.getOtp();
-            log.info("Phone Number: {} has Auth OTP: {}", phoneNumber, authOtp);
-
-            String cachedOtp = otpService.getCacheOtp(phoneNumber);
-            log.info("Phone Number: {} has Cached OTP: {}", phoneNumber, cachedOtp);
-
-            if(authOtp.equals(cachedOtp)) {
-                String jwtToken = createAuthenticationToken(authenticationRequest);
-
-                returnMap.put("status", "success");
-                returnMap.put("message", "OTP Verified Successfully");
-                returnMap.put("jwt", jwtToken);
-                otpService.clearOtp(authenticationRequest.getPhoneNumber());
-            } else {
-                returnMap.put("status", "success");
-                returnMap.put("message", "OTP is either expired or incorrect");
-            }
-        } catch (Exception e) {
-            returnMap.put("status", "failed");
-            returnMap.put("message", e.getMessage());
-        }
-
-        return returnMap;
+        return authenticationService.verifyOtp(authenticationRequest, "phoneNumber");
     }
 
-    public String createAuthenticationToken(AuthRequest authenticationRequest) throws Exception {
-        try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getPhoneNumber(), ""));
-        } catch (BadCredentialsException e) {
-            throw new Exception("Incorrect Username or Password", e);
-        }
+    // Login with Email - OTP
+    @GetMapping("requestEmailOtp/{email}")
+    public Map<String, Object> getEmailOtp(@PathVariable String email) {
+        return authenticationService.getOtp(email, "email");
+    }
 
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getPhoneNumber());
+    @GetMapping("/getEmailOtp/{email}")
+    public String getCachedEmailOtp(@PathVariable String email) {
+        return authenticationService.getCachedOtp(email);
+    }
 
-        return jwtTokenUtil.generateToken(userDetails);
+    @PostMapping("verifyEmailOtp")
+    public Map<String, Object> verifyEmailOtp(@RequestBody AuthRequest authenticationRequest) {
+        return authenticationService.verifyOtp(authenticationRequest, "email");
     }
 }

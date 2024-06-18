@@ -1,5 +1,6 @@
 package com.socialising.services.service;
 
+import com.socialising.services.config.JwtService;
 import com.socialising.services.constants.Status;
 import com.socialising.services.controller.UserController;
 import com.socialising.services.model.Image;
@@ -12,8 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -25,21 +24,23 @@ import java.util.List;
 import java.util.Random;
 
 @Service
-//@RequiredArgsConstructor
-public class UserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
+@RequiredArgsConstructor
+//public class UserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
+public class UserService {
 
     private final UserRepository userRepository;
     private final ImageRepository imageRepository;
     private final PostRepository postRepository;
+    private final JwtService jwtService;
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
-    @Autowired
-    public UserDetailsService(UserRepository userRepository, PostRepository postRepository, ImageRepository imageRepository) {
-        this.userRepository = userRepository;
-        this.postRepository = postRepository;
-        this.imageRepository = imageRepository;
-    }
+//    @Autowired
+//    public UserDetailsService(UserRepository userRepository, PostRepository postRepository, ImageRepository imageRepository) {
+//        this.userRepository = userRepository;
+//        this.postRepository = postRepository;
+//        this.imageRepository = imageRepository;
+//    }
 
     private boolean checkUserExistInDB(Long userid) {
         if(this.userRepository.findById(userid).isPresent()) {
@@ -57,19 +58,6 @@ public class UserDetailsService implements org.springframework.security.core.use
         }
         log.info("Image {} does not exists in DB!!", imageId);
         return false;
-    }
-
-    @Override
-    public UserDetails loadUserByUsername(String phoneNo) throws UsernameNotFoundException {
-        User user = userRepository.findByPhoneNumber(phoneNo);
-
-        if(user == null) {
-            user = new User();
-            user.setPhoneNumber(phoneNo);
-            userRepository.save(user);
-        }
-
-        return new org.springframework.security.core.userdetails.User(user.getPhoneNumber(), "", new ArrayList<>());
     }
 
     // Add New User to DB
@@ -96,6 +84,19 @@ public class UserDetailsService implements org.springframework.security.core.use
         return (ArrayList<User>) this.userRepository.findAll();
     }
 
+    // Get User Details
+    public User getUserDetails(String token) {
+        String jwtToken = token.substring(7);
+
+        try {
+            String username = jwtService.extractUsername(jwtToken);
+            return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        } catch (Exception e) {
+            log.info("JWT Token Error: {}", e.getMessage());
+            return null;
+        }
+    }
+
 
     // Get user by ID
     public User getUserById(Long id) {
@@ -111,8 +112,8 @@ public class UserDetailsService implements org.springframework.security.core.use
     // Get user by Phone Number
     public User getUserByPhoneNumber(String phoneNumber) {
         try {
-            if(this.userRepository.findByPhoneNumber(phoneNumber) != null) {
-                return this.userRepository.findByPhoneNumber(phoneNumber);
+            if(this.userRepository.findByPhoneNumber(phoneNumber).isPresent()) {
+                return this.userRepository.findByPhoneNumber(phoneNumber).orElseThrow(() -> new UsernameNotFoundException("User not found"));
             }
             log.info("No user exists with Phone Number {}", phoneNumber);
             return null;

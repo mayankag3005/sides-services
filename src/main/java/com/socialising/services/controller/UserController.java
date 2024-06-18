@@ -3,7 +3,7 @@ package com.socialising.services.controller;
 import com.socialising.services.constants.Status;
 import com.socialising.services.model.Image;
 import com.socialising.services.model.User;
-import com.socialising.services.service.UserDetailsService;
+import com.socialising.services.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,17 +20,17 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/user/")
-//@RequiredArgsConstructor
+@RequiredArgsConstructor
 public class UserController {
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
-    private final UserDetailsService userDetailsService;
+    private final UserService userDetailsService;
 
-    @Autowired
-    public UserController(UserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
-    }
+//    @Autowired
+//    public UserController(UserDetailsService userDetailsService) {
+//        this.userDetailsService = userDetailsService;
+//    }
 
     @PostMapping("addUser")
     public User addUser(@RequestBody User user) {
@@ -41,6 +41,12 @@ public class UserController {
     @GetMapping("getAllUserDetails")
     public ArrayList<User> getAllUserDetails() {
         return this.userDetailsService.getAllUserDetails();
+    }
+
+    // Get User details
+    @GetMapping("getUserDetails")
+    public User getUserDetails(@RequestHeader("Authorization") String token) {
+        return userDetailsService.getUserDetails(token);
     }
 
     // Get user by ID

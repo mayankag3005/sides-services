@@ -2,6 +2,8 @@ package com.socialising.services.model.chat;
 
 import com.socialising.services.constants.MessageType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import lombok.*;
 
@@ -26,6 +28,7 @@ public class ChatMessage {
 
     private String content; // the message
 
+//    @Enumerated(EnumType.STRING)
 //    private MessageType type;
     private Date timestamp;
 }
