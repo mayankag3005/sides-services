@@ -56,7 +56,7 @@ public class JwtService {
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())                // Override getUsername() in User model
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 24))
+                .setExpiration(new Date(System.currentTimeMillis() + 86400000))  // expire in a day
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

@@ -5,6 +5,7 @@ import com.socialising.services.service.TagService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ public class TagController {
     }
 
     @PostMapping("addTag")
+    @PreAuthorize("hasAuthority('admin:create')")
     public Tag addTag(@RequestBody Tag tag) {
         return this.tagService.addTag(tag);
     }
@@ -33,11 +35,13 @@ public class TagController {
     }
 
     @DeleteMapping("deleteTag/{tagId}")
+    @PreAuthorize("hasAuthority('admin:delete')")
     public int deleteTagById(@PathVariable Long tagId) {
         return this.tagService.deleteTagById(tagId);
     }
 
     @DeleteMapping("deleteTagByName/{tagName}")
+    @PreAuthorize("hasAuthority('admin:delete')")
     public void deleteTagByName(@PathVariable String tagName) {
         this.tagService.deleteTagByName(tagName);
     }
