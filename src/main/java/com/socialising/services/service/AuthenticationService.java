@@ -2,12 +2,15 @@ package com.socialising.services.service;
 
 import com.socialising.services.config.JwtService;
 import com.socialising.services.constants.Role;
+import com.socialising.services.constants.TokenType;
 import com.socialising.services.controller.PostController;
 import com.socialising.services.model.User;
 import com.socialising.services.model.auth.AuthRequest;
 import com.socialising.services.model.auth.AuthenticationRequest;
 import com.socialising.services.model.auth.AuthenticationResponse;
 import com.socialising.services.model.auth.RegisterRequest;
+import com.socialising.services.model.token.Token;
+import com.socialising.services.repository.TokenRepository;
 import com.socialising.services.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -33,6 +36,7 @@ import java.util.Random;
 public class AuthenticationService {
 
     private final UserRepository userRepository;
+    private final TokenRepository tokenRepository;
 
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -56,9 +60,12 @@ public class AuthenticationService {
                 .role(request.getRole())
                 .build();
 
-        userRepository.save(user);
+        var savedUser = userRepository.save(user);
 
         var jwtToken = jwtService.generateToken(user);
+
+        saveUserToken(savedUser, jwtToken);
+
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
@@ -77,6 +84,13 @@ public class AuthenticationService {
         var user = userRepository.findByUsername(request.getUsername()).orElseThrow();
 
         var jwtToken = jwtService.generateToken(user);
+
+        // Revoke all the existing user tokens
+        revokeAllUserTokens(user);
+
+        // Save jwt token in DB for each user
+        saveUserToken(user, jwtToken);
+
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
@@ -155,5 +169,33 @@ public class AuthenticationService {
             log.info(e.getMessage());
             return null;
         }
+    }
+
+    private void saveUserToken(User user, String jwtToken) {
+        Integer tokenId = Integer.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
+        var token = Token.builder()
+                .id(tokenId)
+                .user(user)
+                .token(jwtToken)
+                .tokenType(TokenType.Bearer)
+                .revoked(false)
+                .expired(false)
+                .build();
+
+        tokenRepository.save(token);
+    }
+
+    private void revokeAllUserTokens(User user) {
+        var validUserTokens = tokenRepository.findAllValidTokens(user.getUserId());
+
+        if (validUserTokens.isEmpty()) {
+            return;
+        }
+        validUserTokens.forEach(t -> {
+            t.setExpired(true);
+            t.setRevoked(true);
+        });
+
+        tokenRepository.saveAll(validUserTokens);
     }
 }

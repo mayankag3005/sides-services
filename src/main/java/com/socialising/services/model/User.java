@@ -1,7 +1,9 @@
 package com.socialising.services.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.socialising.services.constants.Role;
 import com.socialising.services.constants.Status;
+import com.socialising.services.model.token.Token;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -39,6 +41,10 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @JsonManagedReference
+    @OneToMany(mappedBy = "user")
+    private List<Token> tokens;
 
     private String firstName;
 
