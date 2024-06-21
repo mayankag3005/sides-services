@@ -1,28 +1,38 @@
 package com.socialising.services.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.socialising.services.config.JwtService;
 import com.socialising.services.constants.Role;
+import com.socialising.services.constants.TokenType;
 import com.socialising.services.controller.PostController;
 import com.socialising.services.model.User;
 import com.socialising.services.model.auth.AuthRequest;
 import com.socialising.services.model.auth.AuthenticationRequest;
 import com.socialising.services.model.auth.AuthenticationResponse;
 import com.socialising.services.model.auth.RegisterRequest;
+import com.socialising.services.model.token.Token;
+import com.socialising.services.repository.TokenRepository;
 import com.socialising.services.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +43,7 @@ import java.util.Random;
 public class AuthenticationService {
 
     private final UserRepository userRepository;
+    private final TokenRepository tokenRepository;
 
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -56,11 +67,16 @@ public class AuthenticationService {
                 .role(request.getRole())
                 .build();
 
-        userRepository.save(user);
+        var savedUser = userRepository.save(user);
 
         var jwtToken = jwtService.generateToken(user);
+        var refreshToken = jwtService.generateRefreshToken(user);
+
+        saveUserToken(savedUser, jwtToken);
+
         return AuthenticationResponse.builder()
-                .token(jwtToken)
+                .accessToken(jwtToken)
+                .refreshToken(refreshToken)
                 .build();
     }
 
@@ -77,9 +93,53 @@ public class AuthenticationService {
         var user = userRepository.findByUsername(request.getUsername()).orElseThrow();
 
         var jwtToken = jwtService.generateToken(user);
+        var refreshToken = jwtService.generateRefreshToken(user);
+
+        // Revoke all the existing user tokens
+        revokeAllUserTokens(user);
+
+        // Save jwt token in DB for each user
+        saveUserToken(user, jwtToken);
+
         return AuthenticationResponse.builder()
-                .token(jwtToken)
+                .accessToken(jwtToken)
+                .refreshToken(refreshToken)
                 .build();
+    }
+
+    public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        final String refreshToken;
+        final String username;
+
+        if(authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return;
+        }
+
+        refreshToken = authHeader.substring(7);
+        username = jwtService.extractUsername(refreshToken);
+
+        // check if username is null or the user is already authenticated
+        if (username != null) {
+            // Get the user Details from the DB
+            var user = this.userRepository.findByUsername(username).orElseThrow();
+
+            // check if token and user wrt token is valid or not
+            if(jwtService.isTokenValid(refreshToken, user)) {
+                // generate new access token and do not change refresh token
+                var accessToken = jwtService.generateToken(user);
+
+                revokeAllUserTokens(user);
+                saveUserToken(user, accessToken);
+
+                var authResponse = AuthenticationResponse.builder()
+                        .accessToken(accessToken)
+                        .refreshToken(refreshToken)
+                        .build();
+
+                new ObjectMapper().writeValue(response.getOutputStream(), authResponse);
+            }
+        }
     }
 
     public Map<String, Object> getOtp(String phoneNoOrEmail, String type) {
@@ -156,4 +216,34 @@ public class AuthenticationService {
             return null;
         }
     }
+
+    private void saveUserToken(User user, String jwtToken) {
+        Integer tokenId = Integer.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
+        var token = Token.builder()
+                .id(tokenId)
+                .user(user)
+                .token(jwtToken)
+                .tokenType(TokenType.Bearer)
+                .revoked(false)
+                .expired(false)
+                .build();
+
+        tokenRepository.save(token);
+    }
+
+    private void revokeAllUserTokens(User user) {
+        var validUserTokens = tokenRepository.findAllValidTokens(user.getUserId());
+
+        if (validUserTokens.isEmpty()) {
+            return;
+        }
+        validUserTokens.forEach(t -> {
+            t.setExpired(true);
+            t.setRevoked(true);
+        });
+
+        tokenRepository.saveAll(validUserTokens);
+    }
+
+
 }
