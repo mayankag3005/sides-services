@@ -1,6 +1,7 @@
 package com.socialising.services.controller;
 
 import com.socialising.services.constants.Status;
+import com.socialising.services.model.ChangePasswordRequest;
 import com.socialising.services.model.Image;
 import com.socialising.services.model.User;
 import com.socialising.services.service.UserService;
@@ -15,6 +16,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,11 +28,6 @@ public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     private final UserService userDetailsService;
-
-//    @Autowired
-//    public UserController(UserDetailsService userDetailsService) {
-//        this.userDetailsService = userDetailsService;
-//    }
 
     @PostMapping("addUser")
     public User addUser(@RequestBody User user) {
@@ -160,5 +157,12 @@ public class UserController {
     @GetMapping("/onlineUsers")
     public ResponseEntity<List<User>> getAllOnlineUsers() {
         return ResponseEntity.ok(this.userDetailsService.findConnectedUsers());
+    }
+
+    // Change Password
+    @PatchMapping("changePassword")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request, Principal connectedUser) {
+        userDetailsService.changePassword(request, connectedUser);
+        return ResponseEntity.ok().build();
     }
 }

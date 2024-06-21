@@ -3,6 +3,7 @@ package com.socialising.services.service;
 import com.socialising.services.config.JwtService;
 import com.socialising.services.constants.Status;
 import com.socialising.services.controller.UserController;
+import com.socialising.services.model.ChangePasswordRequest;
 import com.socialising.services.model.Image;
 import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
@@ -13,11 +14,14 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,22 +29,15 @@ import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
-//public class UserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
 public class UserService {
 
     private final UserRepository userRepository;
     private final ImageRepository imageRepository;
     private final PostRepository postRepository;
     private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
-
-//    @Autowired
-//    public UserDetailsService(UserRepository userRepository, PostRepository postRepository, ImageRepository imageRepository) {
-//        this.userRepository = userRepository;
-//        this.postRepository = postRepository;
-//        this.imageRepository = imageRepository;
-//    }
 
     private boolean checkUserExistInDB(Long userid) {
         if(this.userRepository.findById(userid).isPresent()) {
@@ -537,5 +534,25 @@ public class UserService {
     // to find Connected users
     public List<User> findConnectedUsers() {
         return this.userRepository.findAllByStatus(Status.ONLINE);
+    }
+
+    // Change Password
+    public void changePassword(ChangePasswordRequest request, Principal connectedUser) {
+        var user = (User) ((UsernamePasswordAuthenticationToken) connectedUser).getPrincipal();
+
+        // If current password is not correct
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new IllegalStateException("Wrong Password");
+        }
+
+        // If the new passowrd is not same as confirmation password
+        if (!request.getNewPassword().equals(request.getConfirmationPassword())) {
+            throw new IllegalStateException("New and Confirmed Passwords are not same");
+        }
+
+        // Set the new Password and Update the user
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        log.info("New Password Set Successfully");
     }
 }
