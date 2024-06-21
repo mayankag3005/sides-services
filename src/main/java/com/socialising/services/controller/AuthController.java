@@ -5,6 +5,8 @@ import com.socialising.services.model.auth.AuthenticationRequest;
 import com.socialising.services.model.auth.AuthenticationResponse;
 import com.socialising.services.model.auth.RegisterRequest;
 import com.socialising.services.service.AuthenticationService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,7 @@ public class AuthController {
 
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
 
+    // Register new user - Sign up
     @PostMapping("register")
     public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authenticationService.register(request));
@@ -30,8 +33,14 @@ public class AuthController {
 
     // Login with username - password
     @PostMapping("authenticate")
-    public ResponseEntity<AuthenticationResponse> register(@RequestBody AuthenticationRequest request) throws Exception {
+    public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request) throws Exception {
         return ResponseEntity.ok(authenticationService.authenticate(request));
+    }
+
+    // Refresh token
+    @PostMapping("refresh-token")
+    public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        authenticationService.refreshToken(request, response);
     }
 
     // Login with Phone number - OTP
