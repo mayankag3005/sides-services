@@ -1,11 +1,13 @@
 package com.socialising.services.service;
 
+import com.socialising.services.config.JwtService;
 import com.socialising.services.controller.PostController;
 import com.socialising.services.model.Comment;
 import com.socialising.services.model.Post;
 import com.socialising.services.repository.CommentRepository;
 import com.socialising.services.repository.PostRepository;
 import com.socialising.services.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,22 +17,22 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 
 @Service
+@RequiredArgsConstructor
 public class CommentService {
 
-    @Autowired
     private final CommentRepository commentRepository;
 
-    @Autowired
     private final PostRepository postRepository;
 
-    @Autowired
     private final UserRepository userRepository;
 
-    public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserRepository userRepository) {
-        this.commentRepository = commentRepository;
-        this.postRepository = postRepository;
-        this.userRepository = userRepository;
-    }
+    private final JwtService jwtService;
+
+//    public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserRepository userRepository) {
+//        this.commentRepository = commentRepository;
+//        this.postRepository = postRepository;
+//        this.userRepository = userRepository;
+//    }
 
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
 
@@ -152,39 +154,41 @@ public class CommentService {
     }
 
     // LIKE a Comment by User
-    public int likeAComment(Long commentId, Long userId) {
+    public int likeAComment(Long commentId, String token) {
         if(!checkCommentExistInDB(commentId)) {
             return -1;
         }
 
-        if(!checkUserExistInDB(userId)) {
-            return -1;
-        }
+        String username = jwtService.extractUsername(token.substring(7));
 
-        Comment comment = this.commentRepository.findById(commentId).get();
-        Long[] likes = comment.getCommentLikes();
-        if(ArrayUtils.contains(likes, userId)) {
-            log.info("User {} has already liked the comment {}", userId, commentId);
+//        if(!checkUserExistInDB(userId)) {
+//            return -1;
+//        }
+
+        Comment comment = commentRepository.findById(commentId).get();
+        String[] likes = comment.getCommentLikes();
+        if(ArrayUtils.contains(likes, username)) {
+            log.info("User [{}] has already liked the comment {}", username, commentId);
             return 0;
         }
 
         // Add user to likes list of the post
-        likes = ArrayUtils.add(likes, userId);
+        likes = ArrayUtils.add(likes, username);
         comment.setCommentLikes(likes);
-        this.commentRepository.save(comment);
+        commentRepository.save(comment);
 
-        log.info("User {} has liked the Comment {}, and add to LIKES list of the Comment", userId, commentId);
+        log.info("User [{}] has liked the Comment {}, and add to LIKES list of the Comment", username, commentId);
         return 1;
     }
 
     // GET All LIKES on Comment
-    public Long[] getAllLikesOnComment(Long commentId) {
+    public String[] getAllLikesOnComment(Long commentId) {
         if(!checkCommentExistInDB(commentId)) {
             return null;
         }
 
         Comment comment = this.commentRepository.findById(commentId).get();
-        Long[] likes = comment.getCommentLikes();
+        String[] likes = comment.getCommentLikes();
 
         if(ArrayUtils.isEmpty(likes)) {
             log.info("No LIKES given to the Comment {}", commentId);
@@ -197,28 +201,29 @@ public class CommentService {
     }
 
     // Remove a LIKE on Comment by USER
-    public int removeAlikeOnPost(Long commentId, Long userId) {
+    public int removeAlikeOnPost(Long commentId, String token) {
         if(!checkCommentExistInDB(commentId)) {
             return -1;
         }
 
-        if(!checkUserExistInDB(userId)) {
-            return -1;
-        }
+//        if(!checkUserExistInDB(userId)) {
+//            return -1;
+//        }
+        String username = jwtService.extractUsername(token.substring(7));
 
-        Comment comment = this.commentRepository.findById(commentId).get();
-        Long[] likes = comment.getCommentLikes();
-        if(!ArrayUtils.contains(likes, userId)) {
-            log.info("User {} has NOT liked the Comment {}", userId, commentId);
+        Comment comment = commentRepository.findById(commentId).get();
+        String[] likes = comment.getCommentLikes();
+        if(!ArrayUtils.contains(likes, username)) {
+            log.info("User [{}] has NOT liked the Comment {}", username, commentId);
             return 0;
         }
 
         // Remove user from the LIKES list of the post
-        likes = ArrayUtils.removeElement(likes, userId);
+        likes = ArrayUtils.removeElement(likes, username);
         comment.setCommentLikes(likes);
         this.commentRepository.save(comment);
 
-        log.info("User {} has removed the liked on Comment {}, and is removed from LIKES list of the Comment", userId, commentId);
+        log.info("User [{}] has removed the liked on Comment {}, and is removed from LIKES list of the Comment", username, commentId);
         return 1;
     }
 

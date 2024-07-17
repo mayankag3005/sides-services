@@ -9,7 +9,10 @@ import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
 import com.socialising.services.repository.ImageRepository;
 import com.socialising.services.repository.PostRepository;
+import com.socialising.services.repository.TagRepository;
 import com.socialising.services.repository.UserRepository;
+import io.jsonwebtoken.ExpiredJwtException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
@@ -34,6 +37,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final ImageRepository imageRepository;
     private final PostRepository postRepository;
+    private final TagRepository tagRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
@@ -48,6 +52,24 @@ public class UserService {
         return false;
     }
 
+    private boolean checkUserExistInDBWithUsername(String username) {
+        if(userRepository.findByUsername(username).isPresent()) {
+            log.info("User [{}] exist in DB", username);
+            return true;
+        }
+        log.info("User [{}] does not exists, Please Sign Up!!", username);
+        return false;
+    }
+
+    private boolean checkPostExistInDB(Long postId) {
+        if(this.postRepository.findById(postId).isPresent()) {
+            log.info("Post {} exist in DB", postId);
+            return true;
+        }
+        log.info("Post {} does not exist in DB", postId);
+        return false;
+    }
+
     private boolean checkImageExistInDB(Long imageId) {
         if(this.imageRepository.findById(imageId).isPresent()) {
             log.info("Image {} exist in DB", imageId);
@@ -57,10 +79,21 @@ public class UserService {
         return false;
     }
 
+    private String getUsernameFromToken(String token) {
+        try {
+            String username = jwtService.extractUsername(token.substring(7));
+            log.info("Requested User is [{}]", username);
+            return username;
+        } catch (ExpiredJwtException e) {
+            log.info("The token has expired. Please Login again!!");
+            return "";
+        }
+    }
+
     // Add New User to DB
     public User addUser(User user) {
-
-        user.setUserId();
+        Long userId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
+        user.setUserId(userId);
         user.setStatus(Status.ONLINE);
 
         try {
@@ -78,15 +111,13 @@ public class UserService {
 
         log.info("Total Number of users: {}", userRepository.count());
 
-        return (ArrayList<User>) this.userRepository.findAll();
+        return new ArrayList<User>(userRepository.findAll());
     }
 
     // Get User Details
     public User getUserDetails(String token) {
-        String jwtToken = token.substring(7);
-
         try {
-            String username = jwtService.extractUsername(jwtToken);
+            String username = getUsernameFromToken(token);
             return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
         } catch (Exception e) {
             log.info("JWT Token Error: {}", e.getMessage());
@@ -94,15 +125,21 @@ public class UserService {
         }
     }
 
-
     // Get user by ID
     public User getUserById(Long id) {
-
         if(checkUserExistInDB(id)) {
             return this.userRepository.findById(id).get();
         }
-
         log.info("No user present in DB with userid: {}", id);
+        return null;
+    }
+
+    // Get User by username
+    public User getUserByUsername(String username) {
+        if(checkUserExistInDBWithUsername(username)) {
+            return userRepository.findByUsername(username).get();
+        }
+        log.info("No user present in DB with username: {}", username);
         return null;
     }
 
@@ -128,28 +165,27 @@ public class UserService {
             log.info("User deleted from DB");
 
             // Delete the user from reminder Posts, confirmed Users list
-            Long[] reminderPosts = user.getReminderPosts();
-            if(ArrayUtils.isNotEmpty(reminderPosts)) {
-                for(Long reminderPostId: reminderPosts) {
-                    Post post = this.postRepository.findById(reminderPostId).get();
-                    Long[] confirmedUsers = post.getConfirmedUsers();
-                    confirmedUsers = ArrayUtils.removeElement(confirmedUsers, userid);
-                    post.setConfirmedUsers(confirmedUsers);
-                    this.postRepository.save(post);
-                    log.info("user {} removed from the post {} confirmed Users list", userid, reminderPostId);
+            List<Post> reminderPosts = user.getReminderPosts();
+            if(!reminderPosts.isEmpty()) {
+                for(Post reminderPost: reminderPosts) {
+                    List<User> confirmedUsers = reminderPost.getConfirmedUsers();
+                    confirmedUsers.remove(user);
+                    reminderPost.setConfirmedUsers(confirmedUsers);
+                    this.postRepository.save(reminderPost);
+                    log.info("User [{}] removed from the post confirmed Users list", user.getUsername());
                 }
             }
 
             // Delete User from the friends list of other users
-            Long[] friends = user.getFriends();
+            String[] friends = user.getFriends();
             if(ArrayUtils.isNotEmpty(friends)) {
-                for(Long friendid: friends) {
-                    User friend = this.userRepository.findById(friendid).get();
-                    Long[] friendFriends = friend.getFriends();
-                    friendFriends = ArrayUtils.removeElement(friendFriends, userid);
-                    friend.setFriends(friendFriends);
-                    this.userRepository.save(friend);
-                    log.info("User {} removed from the Friend {} friends list", userid, friendFriends);
+                for(String friendUsername: friends) {
+                    User friend = userRepository.findByUsername(friendUsername).get();
+                    String[] friendsOfFriend = friend.getFriends();
+                    friendsOfFriend = ArrayUtils.removeElement(friendsOfFriend, user.getUsername());
+                    friend.setFriends(friendsOfFriend);
+                    userRepository.save(friend);
+                    log.info("User [{}] removed from the Friend [{}] friends list", user.getUsername(), friendUsername);
                 }
             }
 
@@ -182,288 +218,333 @@ public class UserService {
     }
 
     // To Send the Friend Request from User {userRequestId} to User {userid}
-    public String sendFriendRequest(Long fromuserid, Long touserid) {
-        if(!checkUserExistInDB(fromuserid)) {
-            return "User " + String.valueOf(fromuserid) + " does not exist in DB";
+    /** fromUser is the current user **/
+    public String sendFriendRequest(String toUsername, String token) {
+
+        // Get the username of the user who is sending the request
+        String fromUsername = getUsernameFromToken(token);
+
+        // Check if TO_USER ( who has been requested ) exists in DB
+        if(!checkUserExistInDBWithUsername(toUsername)) {
+            return "User [" + toUsername + "] does not exist in DB";
         }
 
-        if(!checkUserExistInDB(touserid)) {
-            return "User {" + String.valueOf(touserid) + "} does not exist in DB";
+        // Get the user and friends of toUser
+        User toUser = userRepository.findByUsername(toUsername).get();
+        String[] friendsOfToUser = toUser.getFriends();
+
+        // Check if the toUser is already friends with fromUser
+        if(ArrayUtils.contains(friendsOfToUser, fromUsername)) {
+            log.info("User [{}] is already friends with User [{}]", toUsername, fromUsername);
+            return "User [" + toUsername + "] is already friends with User [" + fromUsername + "]";
         }
 
-        User touser = this.userRepository.findById(touserid).get();
-        Long[] friendsOfToUser = touser.getFriends();
+        // Get the friend requests of the toUser
+        String[] friendRequestsOfToUser = toUser.getFriendRequests();
 
-        if(ArrayUtils.contains(friendsOfToUser, fromuserid)) {
-            log.info("User {} is already friends with User {}", fromuserid, touserid);
-            return "User {" + String.valueOf(touserid) + "} already friends with User {" + String.valueOf(fromuserid) + "}";
-        }
-
-        Long[] friendRequests = touser.getFriendRequests();
-
-        if(ArrayUtils.contains(friendRequests, fromuserid)) {
-            log.info("Friend Request is already sent from user {} to user {}", fromuserid, touserid);
+        // Check if the friend request is already sent from fromUser to toUser
+        // So, check if the fromUsername already exists in friend requests list of toUser
+        if(ArrayUtils.contains(friendRequestsOfToUser, fromUsername)) {
+            log.info("Friend Request is already sent from user [{}] to user [{}]", fromUsername, toUsername);
             return "Friend Request Already Sent";
         }
 
-        // Add the user to the friend request list of the requested User
-        friendRequests = ArrayUtils.add(friendRequests, fromuserid);
-        touser.setFriendRequests(friendRequests);
-        this.userRepository.save(touser);
-        log.info("User {} added to User {}'s Friend Request list: {}", fromuserid, touserid, touser.getFriendRequests());
+        // Add the user to the friend request list of the toUser
+        friendRequestsOfToUser = ArrayUtils.add(friendRequestsOfToUser, fromUsername);
+        toUser.setFriendRequests(friendRequestsOfToUser);
+        userRepository.save(toUser);
+        log.info("User [{}] added to User [{}'s] Friend Request list: {}", fromUsername, toUsername, toUser.getFriendRequests());
 
         return "Friend request Sent";
     }
 
-    // To Accept the Friend Request of User {userRequestId} to User {userid}
-    public String acceptFriendRequest(Long userRequestId, Long userid) {
-        if(!checkUserExistInDB(userid)) {
-            return "User " + String.valueOf(userid) + " does not exist in DB";
+    // To Accept the Friend Request of User {fromUsername} to User
+    /** toUser is the current user **/
+    public String acceptFriendRequest(String fromUsername, String token) {
+
+        // Get the toUser who has to accept the friend Request
+        String toUsername = getUsernameFromToken(token);
+        User toUser = userRepository.findByUsername(toUsername).get();
+
+        // Get the friend Request list and friends list of TO_USER
+        String[] friendRequestsOfToUser = toUser.getFriendRequests();
+        String[] friendsOfToUser = toUser.getFriends();
+
+        // Check if fromUsername already exists in friends list of TO_USER
+        if(ArrayUtils.contains(friendsOfToUser, fromUsername)) {
+            log.info("User [{}] is already friends with to user [{}]", fromUsername, toUsername);
+            return "Already Friends";
         }
 
-        User user = this.userRepository.findById(userid).get();
-        Long[] friendsOfUser = user.getFriends();
-
-        if(ArrayUtils.contains(friendsOfUser, userRequestId)) {
-            log.info("User {} is already friends with User {}", userid, userRequestId);
-            return "User {" + String.valueOf(userRequestId) + "} already friends with User {" + String.valueOf(userid) + "}";
+        // Check if fromUsername exists in friend Requests list of TO_USER
+        if(!ArrayUtils.contains(friendRequestsOfToUser, fromUsername)) {
+            log.info("Friend Request is NOT sent from user [{}] to user [{}]", fromUsername, toUsername);
+            return "Friend Request NOT Sent";
         }
 
-        Long[] friendRequests = user.getFriendRequests();
+        // Remove the FROM_USER username from friend Requests list of TO_USER
+        friendRequestsOfToUser = ArrayUtils.removeElement(friendRequestsOfToUser, fromUsername);
+        toUser.setFriendRequests(friendRequestsOfToUser);
 
-        if(!ArrayUtils.contains(friendRequests, userRequestId)) {
-            log.info("Friend Request is NOT sent from user {} to user {}", userRequestId, userid);
-            return "Friend Request NOT Sent. please send the friend request first!";
+        // Check if fromUser exists in DB
+        if(!checkUserExistInDBWithUsername(fromUsername)) {
+            // Save updated friend Requests list of TO_USER in DB and return
+            userRepository.save(toUser);
+            return "User [" + fromUsername + "] does not exist in DB";
         }
 
-        // Removing FROM_USER from TO_USER's friend request list
-        friendRequests = ArrayUtils.removeElement(friendRequests, userRequestId);
-        user.setFriendRequests(friendRequests);
-        this.userRepository.save(user);
+        // Get the fromUser user from DB
+        User fromUser = userRepository.findByUsername(fromUsername).get();
 
-        if(!checkUserExistInDB(userRequestId)) {
-            return "User {" + String.valueOf(userRequestId) + "} does not exist in DB. ";
-        }
+        // Get the friends of fromUser
+        String[] friendsOfFromUser = fromUser.getFriends();
 
         // Add FROM_USER to TO_USER's friends list
-        friendsOfUser = ArrayUtils.add(friendsOfUser, userRequestId);
-        user.setFriends(friendsOfUser);
-        this.userRepository.save(user);
+        friendsOfToUser = ArrayUtils.add(friendsOfToUser, fromUsername);
+        toUser.setFriends(friendsOfToUser);
 
         // Add the TO_USER to FROM_USER's friends list also
-        User fromuser = this.userRepository.findById(userRequestId).get();
-        Long[] friendsOfFromUser = fromuser.getFriends();
-        friendsOfFromUser = ArrayUtils.add(friendsOfFromUser, userid);
-        fromuser.setFriends(friendsOfFromUser);
-        this.userRepository.save(fromuser);
+        friendsOfFromUser = ArrayUtils.add(friendsOfFromUser, toUsername);
+        fromUser.setFriends(friendsOfFromUser);
 
-        log.info("User {} is now Friends with {}", userid, userRequestId);
+        // Save the users back to DB
+        userRepository.save(toUser);
+        userRepository.save(fromUser);
+
+        log.info("User [{}] is now Friends with [{}]", toUsername, fromUsername);
         return "Friend request accepted";
     }
 
     // To Remove/Delete the Friend Request from User {userRequestId} to User {userid}
-    public String deleteFriendRequest(Long fromuserid, Long touserid) {
+    /** toUser is the current user **/
+    public String deleteFriendRequest(String fromUsername, String token) {
 
-        if(!checkUserExistInDB(touserid)) {
-            return "User {" + String.valueOf(touserid) + "} does not exist in DB";
-        }
+        // Get the toUser who has to reject the friend Request
+        String toUsername = getUsernameFromToken(token);
+        User toUser = userRepository.findByUsername(toUsername).get();
 
-        User touser = this.userRepository.findById(touserid).get();
-        Long[] friendRequests = touser.getFriendRequests();
+        // Get the friend Request list of TO_USER
+        String[] friendRequestsOfToUser = toUser.getFriendRequests();
 
-        if(!ArrayUtils.contains(friendRequests, fromuserid)) {
-            log.info("Friend Request is NOT sent from user {} to user {}", fromuserid, touserid);
+        // Check if FROM_USER has sent the request to TO_USER
+        if(!ArrayUtils.contains(friendRequestsOfToUser, fromUsername)) {
+            log.info("Friend Request is NOT sent from User [{}] to User [{}]", fromUsername, toUsername);
             return "Friend Request NOT sent";
         }
 
-        // Remove the user from the friend request list of the requested User
-        friendRequests = ArrayUtils.removeElement(friendRequests, fromuserid);
-        touser.setFriendRequests(friendRequests);
-        this.userRepository.save(touser);
+        // Remove the FROM_USER from the friend request list of the TO_USER
+        friendRequestsOfToUser = ArrayUtils.removeElement(friendRequestsOfToUser, fromUsername);
+        toUser.setFriendRequests(friendRequestsOfToUser);
+        userRepository.save(toUser);
 
-        log.info("User {} removed from User {}'s Friend Request list: {}", fromuserid, touserid, touser.getFriendRequests());
-        return "Friend request Rejected/Deleted";
+        log.info("User [{}] removed from User [{}'s] Friend Request list: [{}]", fromUsername, toUsername, toUser.getFriendRequests());
+        return "Friend request Deleted";
     }
 
-    // Get all the Friend Requests for the USER (User ID)
-    public ArrayList<User> getFriendRequestUsers(Long userid) {
+    // Get all the Friend Requests of the USER
+    public String[] getFriendRequestUsers(String token) {
 
-        if(checkUserExistInDB(userid)) {
-            User user = this.userRepository.findById(userid).get();
+        String username = getUsernameFromToken(token);
+        User user = userRepository.findByUsername(username).get();
+        log.info("Friend Requests for User [{}] are: {}", username, user.getFriendRequests());
+        return user.getFriendRequests();
 
-            if(ArrayUtils.isNotEmpty(user.getFriendRequests())) {
-                Long[] friendRequests = user.getFriendRequests();
-                ArrayList<User> userDetails = new ArrayList<>();
-                for(Long userReqId : friendRequests) {
-                    if(this.userRepository.findById(userReqId).isEmpty()) {
-                        log.info("User {} does not exist in DB", userReqId);
-                        friendRequests = ArrayUtils.removeElement(friendRequests, userReqId);
-                        log.info("User {} removed from User {}'s friends list", userReqId, userid);
-                    }
-                    else {
-                        userDetails.add(this.userRepository.findById(userReqId).get());
-                    }
-                }
-                user.setFriendRequests(friendRequests);
-                log.info("User {} has {} friend Requests: {}", userid, user.getFriendRequests().length, friendRequests);
-                return userDetails;
-            }
-            else {
-                log.info("User {} has no friend requests!!", userid);
-                return null;
-            }
-        }
-
-        return null;
+//        if(ArrayUtils.isNotEmpty(user.getFriendRequests())) {
+//            Long[] friendRequests = user.getFriendRequests();
+//            ArrayList<User> userDetails = new ArrayList<>();
+//            for(Long userReqId : friendRequests) {
+//                if(this.userRepository.findById(userReqId).isEmpty()) {
+//                    log.info("User {} does not exist in DB", userReqId);
+//                    friendRequests = ArrayUtils.removeElement(friendRequests, userReqId);
+//                    log.info("User {} removed from User {}'s friends list", userReqId, userid);
+//                }
+//                else {
+//                    userDetails.add(this.userRepository.findById(userReqId).get());
+//                }
+//            }
+//            user.setFriendRequests(friendRequests);
+//            log.info("User {} has {} friend Requests: {}", userid, user.getFriendRequests().length, friendRequests);
+//            return userDetails;
+//        }
+//        else {
+//            log.info("User {} has no friend requests!!", userid);
+//            return new ArrayList<>();
+//        }
     }
 
     // GET all Friends of USER
-    public ArrayList<User> getFriendsOfUser(Long userid) {
+    public String[] getFriendsOfUser(String token) {
 
-        if(checkUserExistInDB(userid)) {
-            User user = this.userRepository.findById(userid).get();
+        String username = getUsernameFromToken(token);
+        User user = userRepository.findByUsername(username).get();
+        log.info("Friends for User [{}] are: {}", username, user.getFriends());
+        return user.getFriends();
 
-            if(ArrayUtils.isNotEmpty(user.getFriends())) {
-                Long[] friends = user.getFriends();
-                ArrayList<User> friendDetails = new ArrayList<>();
-                for(Long friendid : friends) {
-                    if(this.userRepository.findById(friendid).isEmpty()) {
-                        log.info("Friend User {} does not exist in DB", friendid);
-                        friends = ArrayUtils.removeElement(friends, friendid);
-                        log.info("friend User {} removed from user {} friends list", friendid, userid);
-                    }
-                    else {
-                        friendDetails.add(this.userRepository.findById(friendid).get());
-                    }
-                }
-                user.setFriends(friends);
-                log.info("User {} has {} friends: {}", userid, user.getFriends().length, user.getFriends());
-                return friendDetails;
-            }
-            else {
-                log.info("User {} has not friends!!", userid);
-                return null;
-            }
-        }
-
-        return null;
+//        if(ArrayUtils.isNotEmpty(user.getFriends())) {
+//            Long[] friends = user.getFriends();
+//            ArrayList<User> friendDetails = new ArrayList<>();
+//            for(Long friendid : friends) {
+//                if(this.userRepository.findById(friendid).isEmpty()) {
+//                    log.info("Friend User {} does not exist in DB", friendid);
+//                    friends = ArrayUtils.removeElement(friends, friendid);
+//                    log.info("friend User {} removed from user {} friends list", friendid, userid);
+//                }
+//                else {
+//                    friendDetails.add(this.userRepository.findById(friendid).get());
+//                }
+//            }
+//            user.setFriends(friends);
+//            log.info("User {} has {} friends: {}", userid, user.getFriends().length, user.getFriends());
+//            return friendDetails;
+//        }
+//        else {
+//            log.info("User {} has not friends!!", userid);
+//            return null;
+//        }
     }
 
     // DELETE a Friend (friendID) from User (User Id)
-    public int deleteFriend(Long userid, Long friendid) {
+    public int deleteFriend(String friendUsername, String token) {
 
-        if(checkUserExistInDB(userid)) {
-            User user = this.userRepository.findById(userid).get();
+        String username = getUsernameFromToken(token);
+        User user = userRepository.findByUsername(username).get();
 
-            Long[] friends = user.getFriends();
-            friends = ArrayUtils.removeElement(friends, friendid);
-            user.setFriends(friends);
-            this.userRepository.save(user);
+        // Get the friend's list of the user
+        String[] friendsOfUser = user.getFriends();
 
-            log.info("friend User {} removed from user {} friends list", friendid, userid);
-
-            if(this.userRepository.findById(friendid).isEmpty()) {
-                log.info("Friend User {} does not exist in DB", friendid);
-            }
-            return 1;
+        // check if both the users are friend or not
+        if(!ArrayUtils.contains(friendsOfUser, friendUsername)) {
+            log.info("Friend User [{}] is not friends with User [{}]", friendUsername, username);
+            return -1;
         }
 
-        return -1;
+        // Remove friend Username from Friend's list of User
+        friendsOfUser = ArrayUtils.removeElement(friendsOfUser, friendUsername);
+        user.setFriends(friendsOfUser);
+        userRepository.save(user);
+        log.info("Friend User [{}] removed from user [{}'s] friends list", friendUsername, username);
+
+        // Remove username from Friend's list of Friend User
+        if(checkUserExistInDBWithUsername(friendUsername)) {
+            User friendUser = userRepository.findByUsername(friendUsername).get();
+            String[] friendsOfFriendUser = friendUser.getFriends();
+            friendsOfFriendUser = ArrayUtils.removeElement(friendsOfFriendUser, username);
+            friendUser.setFriends(friendsOfFriendUser);
+            userRepository.save(friendUser);
+            log.info("User [{}] removed from Friend user [{}'s] friends list", username, friendUsername);
+        }  else {
+            log.info("Friend User [{}] does not exist in DB", friendUsername);
+        }
+
+        return 1;
+    }
+
+    public List<Post> getPostsOfUser(String token) {
+
+        String username = getUsernameFromToken(token);
+        List<Post> posts = userRepository.findByUsername(username).get().getPosts();
+        log.info("Number of Posts for User [{}] are {}", username, posts.size());
+        return posts;
+
+    }
+
+    public List<Post> getRequestedPostsOfUser(String token) {
+        String username = getUsernameFromToken(token);
+        List<Post> requestedPosts = userRepository.findByUsername(username).get().getRequestedPosts();
+        log.info("Number of Requested Posts for User [{}] are {}", username, requestedPosts.size());
+        return requestedPosts;
     }
 
     // Get all the reminder posts
-    public Long[] getReminderPosts(Long userid) {
-        if(checkUserExistInDB(userid)) {
-            Long[] reminderPosts = this.userRepository.findById(userid).get().getReminderPosts();
+    public List<Post> getReminderPosts(String token) {
 
-            if(reminderPosts == null) {
-                log.info("No Reminder Posts for Post {}", userid);
-            } else {
-                log.info("Reminder Posts for User {} are {}", userid, reminderPosts.length);
-            }
+        String username = getUsernameFromToken(token);
+        List<Post> reminderPosts = userRepository.findByUsername(username).get().getReminderPosts();
 
-            return reminderPosts;
+        if(reminderPosts.isEmpty()) {
+            log.info("No Reminder Posts for User [{}]", username);
+        } else {
+            log.info("Reminder Posts for User [{}] are {}", username, reminderPosts.size());
         }
-        log.info("No user with User ID: {}", userid);
-        return null;
+
+        return reminderPosts;
     }
 
     // DELETE a Reminder Post from User
-    public Long[] deleteReminderPostsOfUser(Long userid, Long postid) {
-        if(!checkUserExistInDB(userid)) {
-            return null;
-        }
-        User user = this.userRepository.findById(userid).get();
-        if(this.postRepository.findById(postid).isEmpty()) {
-            log.info("Post {} is not in User {} Reminer Bucker List", postid, userid);
+    public List<Post> deleteReminderPostsOfUser(Long postId, String token) {
+        String username = getUsernameFromToken(token);
+
+        // Get the user from DB
+        User user = userRepository.findByUsername(username).get();
+
+        // Check if Post exists in DB
+        if(!checkPostExistInDB(postId)) {
             return user.getReminderPosts();
         }
-        Post post = this.postRepository.findById(postid).get();
+        Post post = this.postRepository.findById(postId).get();
 
-        Long[] reminderPosts = user.getReminderPosts();
-        Long[] confirmedUsers = post.getConfirmedUsers();
+        List<Post> reminderPosts = user.getReminderPosts();
+        List<User> confirmedUsers = post.getConfirmedUsers();
 
         // Check if post exists in reminderBucket of user
-        if(!ArrayUtils.contains(reminderPosts, postid)) {
-            log.info("Post {} does not exists in user {} reminder Posts list", postid, userid);
+        if(!reminderPosts.contains(post)) {
+            log.info("Post {} does not exists in user [{}] reminder Posts list", postId, user.getUsername());
             return reminderPosts;
         }
 
         // Check if user exists in confirmedUser of post
-        if(!ArrayUtils.contains(confirmedUsers, userid)) {
-            log.info("User {} does not exists in post {} Confirmed User list", userid, postid);
-            log.info("But Post {} exists in user {} reminder posts list. CHECK!!!!!!", postid, userid);
+        if(!confirmedUsers.contains(user)) {
+            log.info("User [{}] does not exists in post {} Confirmed User list", user.getUsername(), postId);
+            log.info("But Post {} exists in User's [{}] reminder posts list. CHECK!!!!!!", postId, user.getUsername());
             return null;
         }
 
         // Delete post from User's reminder Post list
-        reminderPosts = ArrayUtils.removeElement(reminderPosts, postid);
+        reminderPosts.remove(post);
         user.setReminderPosts(reminderPosts);
-        this.userRepository.save(user);
+        userRepository.save(user);
 
         // Delete user from Post's confirmed users list
-        confirmedUsers = ArrayUtils.removeElement(confirmedUsers, userid);
+        confirmedUsers.remove(user);
         post.setConfirmedUsers(confirmedUsers);
-        this.postRepository.save(post);
+        postRepository.save(post);
 
-        log.info("User {} Updated Reminder Posts List: {}", userid, user.getReminderPosts());
-        log.info("Post {} Updated Confirmed Users List: {}", postid, post.getConfirmedUsers());
+        log.info("User [{}] Updated Reminder Posts List: {}", username, user.getReminderPosts());
+        log.info("Post [{}] Updated Confirmed Users List: {}", postId, post.getConfirmedUsers());
 
         return user.getReminderPosts();
     }
 
     // Get all TAGS of the User
-    public String[] getTagsofUser(Long userid) {
-        if(checkUserExistInDB(userid)) {
-            return this.userRepository.findById(userid).get().getTags();
-        }
-        return null;
+    public String[] getTagsOfUser(String token) {
+        String username = getUsernameFromToken(token);
+        String[] tags = userRepository.findByUsername(username).get().getTags();
+        log.info("User [{}] has following tags: [{}]", username, tags);
+        return tags;
     }
 
     // UPDATE the TAGS of User
-    public String[] updateTagsOfUser(Long userid, String[] newTags) {
-        if(!checkUserExistInDB(userid)) {
-            return null;
-        }
-        User user = this.userRepository.findById(userid).get();
+    public String[] updateTagsOfUser(String[] newTags, String token) {
+
+        String username = getUsernameFromToken(token);
+        User user = userRepository.findByUsername(username).get();
         String[] currentTags = user.getTags();
         user.setTags(newTags);
-        this.userRepository.save(user);
+        userRepository.save(user);
 
-        log.info("Old tags of User {}: {}", userid, currentTags);
-        log.info("New Tags of user {}: {}", userid, user.getTags());
+        log.info("Old tags of User [{}]: {}", username, currentTags);
+        log.info("New Tags of user [{}]: {}", username, user.getTags());
 
         return user.getTags();
     }
 
     // Add User Display Picture to DB
-    public Image addUserDP(Long userId, MultipartFile file) throws Exception {
-        if(!checkUserExistInDB(userId)) {
-            return null;
-        }
+    public Image addUserDP(MultipartFile file, String token) throws Exception {
 
-        if(file.isEmpty()) {
-            log.info("File is empty.");
+        String username = getUsernameFromToken(token);
+
+        if(file == null || file.isEmpty()) {
+            log.info("File cannot be null or Empty");
             return null;
         }
 
@@ -472,6 +553,7 @@ public class UserService {
             String fileName = StringUtils.cleanPath(file.getOriginalFilename());
             Long imageId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
 
+            // Create New Image
             Image image = new Image(imageId, fileName, file.getContentType(), file.getBytes());
 
             log.info("Image Id: {}", image.getImageId());
@@ -482,11 +564,21 @@ public class UserService {
             this.imageRepository.save(image);
 
             // Save ImageId to User
-            User user = this.userRepository.findById(userId).get();
+            User user = this.userRepository.findByUsername(username).get();
+            Long oldUserDpId = user.getUserDPId();
             user.setUserDPId(image.getImageId());
             this.userRepository.save(user);
 
-            log.info("Image: [{}] saved for User {}", image, userId);
+            // Save New ImageId to User - DP ID
+            user.setUserDPId(imageId);
+            userRepository.save(user);
+
+            // Delete old DP from image repo
+            if (imageRepository.findById(oldUserDpId).isPresent()) {
+                imageRepository.deleteById(oldUserDpId);
+            }
+
+            log.info("Display Picture saved for User [{}]", username);
 
             return image;
         } catch (Exception e) {
@@ -497,23 +589,51 @@ public class UserService {
     }
 
     // GET User DP
-    public Image getUserDP(Long userId) throws Exception {
-        if(!checkUserExistInDB(userId)) {
-            return null;
-        }
+    public Image getUserDP(String token) throws Exception {
+        String username = getUsernameFromToken(token);
+        log.info("DP Requested for USER: [{}]", username);
 
         try {
-            Long userDpId = this.userRepository.findById(userId).get().getUserDPId();
+            User user = userRepository.findByUsername(username).get();
+//            userDP.setFile(ImageUtil.decompressImage(userDP.getFile()));
 
-            if(!checkImageExistInDB(userDpId)) {
+            if(!checkImageExistInDB(user.getUserDPId())) {
                 log.info("User has no DP. Please add one!");
+                user.setUserDPId(null);
+                userRepository.save(user);
                 return null;
             }
 
-            return this.imageRepository.findById(userDpId).get();
+            Image userDP = imageRepository.findById(user.getUserDPId()).get();
+            log.info("User DP: [{}]", userDP.getFilename());
+            return userDP;
+
         } catch (Exception e) {
             log.info("Error getting User DP. Please try again!! -> {}", e.getMessage());
             return null;
+        }
+    }
+
+    // Remove user DP
+    public int removeUserDP(String token) {
+        String username = getUsernameFromToken(token);
+        User user = userRepository.findByUsername(username).get();
+        Long userDpId = user.getUserDPId();
+        try {
+            if (userDpId != null) {
+                user.setUserDPId(null);
+                imageRepository.deleteById(userDpId);
+                userRepository.save(user);
+
+                log.info("USER [{}] DP Removed successfully", username);
+                return 1;
+            } else {
+                log.info("User [{}] DP does not exist", username);
+                return 0;
+            }
+        } catch (Exception e) {
+            log.info("User [{}] DP NOT Removed due to : {}", username, e.getMessage());
+            return -1;
         }
     }
 

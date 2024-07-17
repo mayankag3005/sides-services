@@ -25,7 +25,7 @@ public class Comment {
 
     private String description;
 
-    private Long[] commentLikes;
+    private String[] commentLikes;
 
     public void setCommentId() {
         this.commentId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));

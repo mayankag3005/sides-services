@@ -11,6 +11,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -21,7 +22,6 @@ import java.util.Random;
 @AllArgsConstructor
 @Table(name = "user", uniqueConstraints = { @UniqueConstraint(columnNames = { "username", "userId", "phoneNumber" }) })
 @Entity
-@Data
 @Builder
 public class User implements UserDetails {
 
@@ -49,6 +49,10 @@ public class User implements UserDetails {
     private String firstName;
 
     private String lastName;
+
+//    @OneToOne
+//    @JoinColumn(name = "userDPId")
+//    private Image userDP;
 
     private Long userDPId;
 
@@ -79,19 +83,35 @@ public class User implements UserDetails {
 
     private String occupation;
 
-    private Long[] friendRequests;
+    private String[] friendRequests;
 
-    private Long[] friends;
-
-    private Long[] posts;
+    private String[] friends;
 
     private String[] tags;
 
-    private Long[] reminderPosts;
+    @OneToMany(mappedBy = "ownerUser")
+    @JsonManagedReference
+    private List<Post> posts;
 
-    public void setUserId() {
-        this.userId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
-    }
+    @ManyToMany
+    @JoinTable(
+            name = "user_interestedPosts",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "interestedPosts_id")
+
+    )
+    @JsonManagedReference
+    private List<Post> requestedPosts;
+
+    @ManyToMany
+    @JoinTable(
+            name = "user_reminderPosts",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "reminderPosts_id")
+
+    )
+    @JsonManagedReference
+    private List<Post> reminderPosts;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -5,6 +5,7 @@ import com.socialising.services.model.auth.RegisterRequest;
 import com.socialising.services.service.AuthenticationService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -19,6 +20,7 @@ import static com.socialising.services.constants.Role.ADMIN;
 @ComponentScan(basePackages = { "com.*" })
 @EntityScan("com.*")
 @EnableConfigurationProperties
+@EnableAutoConfiguration
 public class ServicesApplication {
 
 	public static void main(String[] args) {

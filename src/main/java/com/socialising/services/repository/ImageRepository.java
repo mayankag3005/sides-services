@@ -1,6 +1,7 @@
 package com.socialising.services.repository;
 
 import com.socialising.services.model.Image;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -74,6 +75,8 @@ public class AuthenticationService {
 
         saveUserToken(savedUser, jwtToken);
 
+        log.info("User [{}] registered successfully", user.getUsername());
+
         return AuthenticationResponse.builder()
                 .accessToken(jwtToken)
                 .refreshToken(refreshToken)
@@ -100,6 +103,8 @@ public class AuthenticationService {
 
         // Save jwt token in DB for each user
         saveUserToken(user, jwtToken);
+
+        log.info("User [{}] authenticated successfully", user.getUsername());
 
         return AuthenticationResponse.builder()
                 .accessToken(jwtToken)

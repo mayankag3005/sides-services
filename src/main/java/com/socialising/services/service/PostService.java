@@ -1,42 +1,46 @@
 package com.socialising.services.service;
 
+import com.socialising.services.config.JwtService;
+import com.socialising.services.constants.Role;
 import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
 import com.socialising.services.repository.ImageRepository;
 import com.socialising.services.repository.PostRepository;
 import com.socialising.services.repository.UserRepository;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class PostService {
 
     private static final Logger log = LoggerFactory.getLogger(com.socialising.services.controller.PostController.class);
 
-    @Autowired
     private final PostRepository postRepository;
 
-    @Autowired
     private final UserRepository userRepository;
 
-    @Autowired
-    private ImageRepository imageRepository;
+    private final ImageRepository imageRepository;
 
-    // Inject the object of Repository using the Bean created in Repository Interface
-    public PostService(PostRepository postRepository, ImageRepository imageRepository, UserRepository userRepository) {
-        this.postRepository = postRepository;
-        this.imageRepository = imageRepository;
-        this.userRepository = userRepository;
-    }
+    private final JwtService jwtService;
 
     private boolean checkPostExistInDB(Long postId) {
-        if(this.postRepository.findById(postId).isPresent()) {
+        if(postRepository.findById(postId).isPresent()) {
             log.info("Post {} exist in DB", postId);
             return true;
         }
@@ -45,7 +49,7 @@ public class PostService {
     }
 
     private boolean checkUserExistInDB(Long userId) {
-        if(this.userRepository.findById(userId).isPresent()) {
+        if(userRepository.findById(userId).isPresent()) {
             log.info("User {} exist in DB", userId);
             return true;
         }
@@ -53,11 +57,53 @@ public class PostService {
         return false;
     }
 
-    // Add a Post to DB
-    public Post addPost(Post post) {
+    private boolean checkUserExistInDBWithUsername(String username) {
+        if(userRepository.findByUsername(username).isPresent()) {
+            log.info("User [{}] exist in DB", username);
+            return true;
+        }
+        log.info("User [{}] does not exists, Please Sign Up!!", username);
+        return false;
+    }
 
-        post.setPostId();
-        post.setCreatedTs();
+    private boolean checkUserOwnerOfPostAndRole(String token, String ownerUsername) {
+        String username = jwtService.extractUsername(token.substring(7));
+        Role userRole = userRepository.findByUsername(username).get().getRole();
+        if (username.equals(ownerUsername) || userRole.equals(Role.ADMIN)) {
+            return true;
+        }
+        return false;
+    }
+
+    // Add a Post to DB
+    public Post addPost(Post newPost, String token) {
+
+        String username = "";
+        try {
+            log.info("Token: {}", token);
+            username = jwtService.extractUsername(token.substring(7));
+            log.info("Username: {}", username);
+        } catch (BadCredentialsException e) {
+            log.info("Invalid / Expired token");
+        }
+
+
+        Long postId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
+        var post = Post.builder()
+                .postId(postId)
+                .ownerUser(userRepository.findByUsername(username).orElseThrow())
+                .description(newPost.getDescription())
+                .postType(newPost.getPostType())
+                .timeType(newPost.getTimeType())
+                .postStartTs(newPost.getPostStartTs())
+                .postEndTs(newPost.getPostEndTs())
+                .location(newPost.getLocation())
+                .onlyForWomen(newPost.getOnlyForWomen())
+                .tags(newPost.getTags())
+                .createdTs(Timestamp.valueOf(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date())))
+                .confirmedUsers(new ArrayList<>())
+                .interestedUsers(new ArrayList<>())
+                .build();
 
         try {
             this.postRepository.save(post);
@@ -84,198 +130,274 @@ public class PostService {
     }
 
     // DELETE Post by ID
-    public void deletePost(Long postid) {
-        if(checkPostExistInDB(postid)) {
-            Long[] confirmedUsers = this.postRepository.findById(postid).get().getConfirmedUsers();
-            this.postRepository.deleteById(postid);
-            log.info("Post with Post ID: {} deleted from DB", postid);
+    public void deletePost(Long postId, String token) {
+        if(checkPostExistInDB(postId)) {
+
+            Post post = this.postRepository.findById(postId).get();
+
+            // Check if the user is the owner user of post
+            // Only owner user or ADMIN can delete a Post
+            String username = jwtService.extractUsername(token.substring(7));
+            String ownerUsername = post.getOwnerUser().getUsername();
+
+            if ( !checkUserOwnerOfPostAndRole(token, ownerUsername) ) {
+                log.info("User is not authorized to delete the Post");
+                return;
+            }
+
+            List<User> confirmedUsers = new ArrayList<>();
+            if (post.getConfirmedUsers() != null) {
+                confirmedUsers  = post.getConfirmedUsers();
+            }
+
+            this.postRepository.deleteById(postId);
+            log.info("Post with Post ID: {} deleted from DB", postId);
 
             // Delete the post from Confirmed User's Reminder Posts list
-            if(ArrayUtils.isNotEmpty(confirmedUsers)) {
-                for(Long userid: confirmedUsers) {
-                    User user = this.userRepository.findById(userid).get();
-                    Long[] reminderPosts = user.getReminderPosts();
-                    reminderPosts = ArrayUtils.removeElement(reminderPosts, postid);
-                    user.setReminderPosts(reminderPosts);
-                    this.userRepository.save(user);
-                    log.info("Post {} removed from User {} reminder posts list", postid, userid);
+            if(!confirmedUsers.isEmpty()) {
+                for(User confirmedUser: confirmedUsers) {
+                    List<Post> reminderPosts = confirmedUser.getReminderPosts();
+                    reminderPosts.remove(post);
+//                    reminderPosts = ArrayUtils.removeElement(reminderPosts, postId);
+                    confirmedUser.setReminderPosts(reminderPosts);
+                    userRepository.save(confirmedUser);
+                    log.info("Post {} removed from User [{}] reminder posts list", postId, confirmedUser.getUsername());
                 }
             }
         }
     }
 
     // Interested User Request for a Post
-    public int postUserRequest(Long postid, Long userid) {
-        if(checkPostExistInDB(postid)) {
+    public int postUserRequest(Long postId, String token) {
+        if(checkPostExistInDB(postId)) {
 
-            if(!checkUserExistInDB(userid)) {
+            // Get the interested User
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username).get();
+
+            // Get the list of current interested users
+            Post post = postRepository.findById(postId).get();
+            List<User> interestedUsers = new ArrayList<>();
+            if (post.getInterestedUsers() != null) {
+                interestedUsers = post.getInterestedUsers() ;
+            }
+            log.info("Interested Users before: {}", interestedUsers);
+
+            // Check if user is the owner user of Post
+            if (user.getUsername().equals(post.getOwnerUser().getUsername())) {
+                log.info("User [{}] is the owner of the Post", user.getUsername());
                 return -1;
             }
 
-            Post post = this.postRepository.findById(postid).get();
-            Long[] interestedUsers = post.getInterestedUsers() ;
-            log.info("Interested Users before: {}", (Object) interestedUsers);
-
-            if (ArrayUtils.contains(interestedUsers, userid)) {
-                log.info("User {} exists in Interested Users list for Post {}", userid, postid);
-                return interestedUsers.length;
+            // check if User is already in the list of interested users list
+            if (!interestedUsers.isEmpty() && interestedUsers.contains(user)) {
+                log.info("User [{}] already exists in Interested Users list for Post {}", username, postId);
+                return 0;
             } else {
 
-                interestedUsers = ArrayUtils.add(interestedUsers, userid);
-                post.setInterestedUsers(interestedUsers);
-                this.postRepository.save(post);
-                log.info("Interested Users for Post: {} are {}", postid, interestedUsers);
+                List<Post> requestedPosts = new ArrayList<>();
+                if (user.getRequestedPosts() != null) {
+                    requestedPosts = user.getRequestedPosts();
+                }
+                requestedPosts.add(post);
+                user.setRequestedPosts(requestedPosts);
+                userRepository.save(user);
 
-                return interestedUsers.length;
+                interestedUsers.add(user);
+                post.setInterestedUsers(interestedUsers);
+                postRepository.save(post);
+                log.info("User [{}] added to Interested Users List for Post [{}]", user.getUsername(), postId);
+
+                return 1;
             }
         }
         return -1;
     }
 
     // Get All Interested Users for a Post
-    public Long[] getInterestedUsers(Long postid) {
-        if(checkPostExistInDB(postid)) {
+    public List<String> getInterestedUsers(Long postId) {
+        if(checkPostExistInDB(postId)) {
 
-            Long[] interestedUsers = this.postRepository.findById(postid).get().getInterestedUsers();
+            List<User> interestedUsers = postRepository.findById(postId).get().getInterestedUsers();
 
-            if(interestedUsers == null) {
-                log.info("No Interested Users for Post {}", postid);
+            if(interestedUsers.isEmpty()) {
+                log.info("No Interested Users for Post {}", postId);
             } else {
-                log.info("Interested Users for Post {} are {}", postid, interestedUsers.length);
+                log.info("Interested Users for Post {} are {}", postId, interestedUsers.size());
             }
 
-            return interestedUsers;
+            return interestedUsers.stream().map(User::getUsername).collect(Collectors.toList());
         }
         return null;
     }
 
     // ACCEPT Interested User for a post
-    public int acceptInterestedUser(Long postid, Long userid) {
+    public int acceptInterestedUser(Long postId, String username, String token) {
 
-        if(!checkPostExistInDB(postid)) {
+        if(!checkPostExistInDB(postId)) {
             return -1;
         }
 
-        if(!checkUserExistInDB(userid)) {
+        if(!checkUserExistInDBWithUsername(username)) {
             return -1;
         }
 
-        Post post = this.postRepository.findById(postid).get();
-        Long[] interestedUsers = post.getInterestedUsers();
+        Post post = this.postRepository.findById(postId).get();
+        User user = userRepository.findByUsername(username).get();
+        List<User> interestedUsers = post.getInterestedUsers();
+        List<Post> requestedPosts = user.getRequestedPosts();
 
-        if(!Arrays.asList(interestedUsers).contains(userid)) {
-            log.info("User does not exists in Post interested Users list. Please raise request for the post");
+        // Check if the User is Authorized to Accept the User
+        // Only ADMIN or Post's Owner User is allowed
+        if (!checkUserOwnerOfPostAndRole(token, post.getOwnerUser().getUsername())) {
+            log.info("User [{}] is NOT Authorized to accept the User Request", jwtService.extractUsername(token.substring(7)));
+            return -1;
+        }
+
+        // Check if user already exists
+        if(!interestedUsers.contains(user)) {
+            log.info("User [{}] does not exists in Post interested Users list. Please raise request for the post", user.getUsername());
             return -1;
         }
         else {
-            // delete userid from interestedUsers array
-            interestedUsers = ArrayUtils.removeElement(interestedUsers, userid);
-            log.info("User {} deleted from the Post {} interested Users list", userid, postid);
+            // delete user from interestedUsers array
+            interestedUsers.remove(user);
+            log.info("User [{}] deleted from the Post [{}] interested Users list", user.getUsername(), postId);
+
+            // delete post from user's requested Post list
+            requestedPosts.remove(post);
+            log.info("Post [{}] deleted from the user [{}] interested Users list", postId, user.getUsername());
         }
 
-        Long[] confirmedUsers = post.getConfirmedUsers();
+        List<User> confirmedUsers = post.getConfirmedUsers();
 
-        if(ArrayUtils.contains(confirmedUsers, userid)) {
-            log.info("user {} already exists in confirmed users list for post{}. Check again", userid, postid);
+        // Check if user already exists in Post's Confirmed User list
+        if(confirmedUsers.contains(user)) {
+            log.info("User [{}] already exists in confirmed users list for post{}. Check again", user.getUsername(), postId);
         }
         else {
-            // Add userid to confirmedUsers array
-            confirmedUsers = ArrayUtils.add(confirmedUsers, userid);
-            log.info("User {} added to Post {} confirmed Users List. See you soon fella!!", userid, postid);
+            // Add user to confirmedUsers array
+            confirmedUsers.add(user);
+            log.info("User [{}] added to Post {} confirmed Users List. See you soon fella!!", user.getUsername(), postId);
         }
 
-        User user = this.userRepository.findById(userid).get();
-        Long[] reminderPosts = user.getReminderPosts();
+        List<Post> reminderPosts = user.getReminderPosts();
 
-        if(ArrayUtils.contains(reminderPosts, postid)) {
-            log.info("Post {} already exists in User {} reminder bucket list of posts!!", postid, userid);
+        if(reminderPosts.contains(post)) {
+            log.info("Post {} already exists in User [{}] reminder bucket list of posts!!", postId, user.getUsername());
         }
         else {
             // Add post to user's reminder posts list
-            reminderPosts = ArrayUtils.add(reminderPosts, postid);
-            log.info("Post {} added to User {} reminder Posts list", postid, userid);
+            reminderPosts.add(post);
+            log.info("Post {} added to User [{}] reminder Posts list", postId, user.getUsername());
         }
 
         post.setInterestedUsers(interestedUsers);
+        user.setRequestedPosts(requestedPosts);
         post.setConfirmedUsers(confirmedUsers);
         user.setReminderPosts(reminderPosts);
 
         this.postRepository.save(post);
         this.userRepository.save(user);
 
-        log.info("For Post {}, added user {} to Confirmed Users list {}, removed from Interested Users {}, so the confirmed posts are {}", postid, userid, confirmedUsers, interestedUsers, reminderPosts);
+        log.info("For Post {}, added User [{}] to Confirmed Users list {}, removed from Interested Users {}, so the confirmed posts are {}",
+                postId, username, confirmedUsers, interestedUsers, reminderPosts);
         return 1;
     }
 
     // Reject Interested user of the post
-    public int rejectInterestedUser(Long postid, Long userid) {
-        if(!checkPostExistInDB(postid)) {
+    public int rejectInterestedUser(Long postId, String username, String token) {
+        if(!checkPostExistInDB(postId)) {
             return -1;
         }
 
-        if(!checkUserExistInDB(userid)) {
+        if(!checkUserExistInDBWithUsername(username)) {
             return -1;
         }
 
-        Post post = this.postRepository.findById(postid).get();
-        Long[] interestedUsers = post.getInterestedUsers();
-        interestedUsers = ArrayUtils.removeElement(interestedUsers, userid);
-        post.setInterestedUsers(interestedUsers);
-        this.postRepository.save(post);
+        Post post = this.postRepository.findById(postId).get();
+        User user = userRepository.findByUsername(username).get();
 
-        log.info("User {} removed from Interested Users list {}", userid, interestedUsers);
-        return 1;
+        // Check if the User is Authorized to Reject the User
+        // Only ADMIN or Post's Owner User is allowed
+        if (!checkUserOwnerOfPostAndRole(token, post.getOwnerUser().getUsername())) {
+            log.info("User [{}] is NOT Authorized to reject the User Request", jwtService.extractUsername(token.substring(7)));
+            return -1;
+        }
+
+        List<User> interestedUsers = post.getInterestedUsers();
+        List<Post> requestedPosts = user.getRequestedPosts();
+
+        if (interestedUsers.remove(user) && requestedPosts.remove(post)) {
+            log.info("User [{}] removed from Interested Users list", user.getUsername());
+
+            post.setInterestedUsers(interestedUsers);
+            user.setRequestedPosts(requestedPosts);
+
+            postRepository.save(post);
+            userRepository.save(user);
+
+            return 1;
+        }
+        log.info("User [{}] NOT removed from Interested Users list", username);
+        return -1;
     }
 
     // GET All the confirmed users
-    public Long[] getConfirmedUsers(Long postid) {
-        if(checkPostExistInDB(postid)) {
-            Long[] confirmedUsers = this.postRepository.findById(postid).get().getConfirmedUsers();
+    public List<String> getConfirmedUsers(Long postId) {
+        if(checkPostExistInDB(postId)) {
+            List<User> confirmedUsers = this.postRepository.findById(postId).get().getConfirmedUsers();
 
-            if(confirmedUsers == null) {
-                log.info("No Confirmed Users for Post {}", postid);
+            if(confirmedUsers.isEmpty()) {
+                log.info("No Confirmed Users for Post {}", postId);
             } else {
-                log.info("Confirmed Users for Post {} are {}", postid, confirmedUsers.length);
+                log.info("Confirmed Users for Post {} are {}", postId, confirmedUsers.size());
             }
 
-            return confirmedUsers;
+            return confirmedUsers.stream().map(User::getUsername).collect(Collectors.toList());
         }
         return null;
     }
 
     // DELETE a Confirmed User from Post
-    public Long[] deleteConfirmedUser(Long postid, Long userid) {
-        if(!checkPostExistInDB(postid)) {
-            log.info("No Post with Post ID {} in DB", postid);
-            return null;
+    public int deleteConfirmedUser(Long postId, String username, String token) {
+        if (!checkPostExistInDB(postId)) {
+            return -1;
         }
 
-        Post post = this.postRepository.findById(postid).get();
-        if(this.userRepository.findById(userid).isEmpty()) {
-            log.info("No user with User ID {} in DB", userid);
-            return post.getConfirmedUsers();
+        Post post = this.postRepository.findById(postId).get();
+        if (!checkUserExistInDBWithUsername(username)) {
+            return -1;
         }
 
-        Long[] confirmedUsers = post.getConfirmedUsers();
-        if(!ArrayUtils.contains(confirmedUsers, userid)) {
-            log.info("User {} does not exist in Confirmed Users List of Post {}", userid, postid);
-            return post.getConfirmedUsers();
+        // Check if the User is Authorized to Delete the Confirmed User
+        // Only ADMIN or Post's Owner User is allowed
+        if (!checkUserOwnerOfPostAndRole(token, post.getOwnerUser().getUsername())) {
+            log.info("User [{}] is NOT Authorized to delete the User Request", jwtService.extractUsername(token.substring(7)));
+            return -1;
         }
 
-        confirmedUsers = ArrayUtils.removeElement(confirmedUsers, userid);
+        User user = userRepository.findByUsername(username).get();
+        List<User> confirmedUsers = post.getConfirmedUsers();
+
+        if (!confirmedUsers.contains(user)) {
+            log.info("User [{}] does not exist in Confirmed Users List of Post [{}]", username, postId);
+            return 0;
+        }
+
+        confirmedUsers.remove(user);
         post.setConfirmedUsers(confirmedUsers);
-        this.postRepository.save(post);
+        postRepository.save(post);
+        log.info("Post {} removed from User [{}] Reminder Posts list", postId, username);
 
         // Delete Post from User's Reminder Posts List
-        User user = this.userRepository.findById(userid).get();
-        Long[] reminderPosts = user.getReminderPosts();
-        reminderPosts = ArrayUtils.removeElement(reminderPosts, postid);
+        List<Post> reminderPosts = user.getReminderPosts();
+        reminderPosts.remove(post);
         user.setReminderPosts(reminderPosts);
-        this.userRepository.save(user);
-        log.info("Post {} removed from User {} Reminder Posts list", postid, userid);
+        userRepository.save(user);
+        log.info("User [{}] removed from Confirmed Users list {}", username, confirmedUsers);
 
-        log.info("User {} removed from Confirmed Users list {}", userid, confirmedUsers);
-        return post.getConfirmedUsers();
+        return 1;
     }
 
     // Like a Post by User

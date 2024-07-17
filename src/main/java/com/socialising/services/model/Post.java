@@ -1,12 +1,11 @@
 package com.socialising.services.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import java.sql.Timestamp;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.util.Random;
+import java.util.List;
 
 @Getter
 @Setter
@@ -14,14 +13,17 @@ import java.util.Random;
 @AllArgsConstructor
 @Table(name = "post", uniqueConstraints = { @UniqueConstraint(columnNames = { "postId" }) })
 @Entity
-@Data
+@Builder
 public class Post {
 
     @Id
     @Column(unique=true)
     private Long postId;
 
-    private Long userId;
+    @ManyToOne
+    @JoinColumn(name = "userId")
+    @JsonBackReference
+    private User ownerUser;
 
     private String description;
 
@@ -53,16 +55,11 @@ public class Post {
 
     private Long[] comments;
 
-    private Long[] interestedUsers;
+    @ManyToMany(mappedBy = "requestedPosts")
+    @JsonBackReference
+    private List<User> interestedUsers;
 
-    private Long[] confirmedUsers;
-
-
-    public void setPostId() {
-        this.postId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
-    }
-
-    public void setCreatedTs() {
-        this.createdTs = Timestamp.valueOf(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
-    }
+    @ManyToMany(mappedBy = "reminderPosts")
+    @JsonBackReference
+    private List<User> confirmedUsers;
 }

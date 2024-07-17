@@ -37,18 +37,18 @@ public class CommentController {
         return this.commentService.deleteCommentOnPost(postId, commentId);
     }
 
-    @PostMapping("likeComment/{commentId}/{userId}")
-    public int likeAComment(@PathVariable("commentId") Long commentId, @PathVariable("userId") Long userId) {
-        return this.commentService.likeAComment(commentId, userId);
+    @PostMapping("likeComment/{commentId}")
+    public int likeAComment(@PathVariable("commentId") Long commentId, @RequestHeader("Authorization") String token) {
+        return this.commentService.likeAComment(commentId, token);
     }
 
     @GetMapping("getAllLikesOnComment/{commentId}")
-    public Long[] getAllLikesOnComment(@PathVariable Long commentId) {
+    public String[] getAllLikesOnComment(@PathVariable Long commentId) {
         return this.commentService.getAllLikesOnComment(commentId);
     }
 
     @DeleteMapping("removeAlikeOnComment/{commentId}/{userId}")
-    public int removeAlikeOnPost(@PathVariable("commentId") Long commentId, @PathVariable("userId") Long userId) {
-        return this.commentService.removeAlikeOnPost(commentId, userId);
+    public int removeAlikeOnPost(@PathVariable("commentId") Long commentId, @RequestHeader("Authorization") String token) {
+        return this.commentService.removeAlikeOnPost(commentId, token);
     }
 }

@@ -2,9 +2,7 @@ package com.socialising.services.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.text.DecimalFormat;
-import java.util.Random;
+import org.hibernate.annotations.Type;
 
 @Getter
 @Setter
@@ -12,7 +10,7 @@ import java.util.Random;
 @AllArgsConstructor
 @Table(name = "image", schema="socialise", uniqueConstraints = { @UniqueConstraint(columnNames = { "imageId" }) })
 @Entity
-@Data
+@Builder
 public class Image {
 
     @Id
@@ -25,8 +23,4 @@ public class Image {
 
     @Lob
     private byte[] file;
-
-    public void setImageId() {
-        this.imageId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
-    }
 }
