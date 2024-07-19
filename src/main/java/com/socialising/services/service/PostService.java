@@ -7,12 +7,10 @@ import com.socialising.services.model.User;
 import com.socialising.services.repository.ImageRepository;
 import com.socialising.services.repository.PostRepository;
 import com.socialising.services.repository.UserRepository;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +18,6 @@ import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -41,21 +38,21 @@ public class PostService {
 
     private boolean checkPostExistInDB(Long postId) {
         if(postRepository.findById(postId).isPresent()) {
-            log.info("Post {} exist in DB", postId);
+            log.info("Post [{}] exist in DB", postId);
             return true;
         }
         log.info("Post {} does not exist in DB", postId);
         return false;
     }
 
-    private boolean checkUserExistInDB(Long userId) {
-        if(userRepository.findById(userId).isPresent()) {
-            log.info("User {} exist in DB", userId);
-            return true;
-        }
-        log.info("User {} does not exists, Please Sign Up!!", userId);
-        return false;
-    }
+//    private boolean checkUserExistInDB(Long userId) {
+//        if(userRepository.findById(userId).isPresent()) {
+//            log.info("User [{}] exist in DB", userId);
+//            return true;
+//        }
+//        log.info("User {} does not exists, Please Sign Up!!", userId);
+//        return false;
+//    }
 
     private boolean checkUserExistInDBWithUsername(String username) {
         if(userRepository.findByUsername(username).isPresent()) {
@@ -85,6 +82,8 @@ public class PostService {
             log.info("Username: {}", username);
         } catch (BadCredentialsException e) {
             log.info("Invalid / Expired token");
+            log.info("No Post added to DB");
+            return null;
         }
 
 
@@ -145,23 +144,41 @@ public class PostService {
                 return;
             }
 
+            // Get the Confirmed Users list of Post
             List<User> confirmedUsers = new ArrayList<>();
             if (post.getConfirmedUsers() != null) {
                 confirmedUsers  = post.getConfirmedUsers();
             }
 
-            this.postRepository.deleteById(postId);
+            // Get the Interested Users list of Post
+            List<User> interestedUsers = new ArrayList<>();
+            if (post.getInterestedUsers() != null) {
+                interestedUsers  = post.getInterestedUsers();
+            }
+
+            // Delete Post from DB
+            postRepository.deleteById(postId);
             log.info("Post with Post ID: {} deleted from DB", postId);
 
-            // Delete the post from Confirmed User's Reminder Posts list
+            // Delete the post from Confirmed Users Reminder Posts list
             if(!confirmedUsers.isEmpty()) {
                 for(User confirmedUser: confirmedUsers) {
                     List<Post> reminderPosts = confirmedUser.getReminderPosts();
                     reminderPosts.remove(post);
-//                    reminderPosts = ArrayUtils.removeElement(reminderPosts, postId);
                     confirmedUser.setReminderPosts(reminderPosts);
                     userRepository.save(confirmedUser);
-                    log.info("Post {} removed from User [{}] reminder posts list", postId, confirmedUser.getUsername());
+                    log.info("Post [{}] removed from User [{}'s] Reminder posts list", postId, confirmedUser.getUsername());
+                }
+            }
+
+            // Delete the post from Interested Users Requested Posts list
+            if(!interestedUsers.isEmpty()) {
+                for(User interestedUser: interestedUsers) {
+                    List<Post> requestedPosts = interestedUser.getRequestedPosts();
+                    requestedPosts.remove(post);
+                    interestedUser.setRequestedPosts(requestedPosts);
+                    userRepository.save(interestedUser);
+                    log.info("Post [{}] removed from User [{}'s] Requested Posts list", postId, interestedUser.getUsername());
                 }
             }
         }
@@ -215,6 +232,7 @@ public class PostService {
     }
 
     // Get All Interested Users for a Post
+    // This method checks if a post exists in the database, retrieves the list of interested users, logs the appropriate message, and returns the usernames of the interested users.
     public List<String> getInterestedUsers(Long postId) {
         if(checkPostExistInDB(postId)) {
 
@@ -266,14 +284,14 @@ public class PostService {
 
             // delete post from user's requested Post list
             requestedPosts.remove(post);
-            log.info("Post [{}] deleted from the user [{}] interested Users list", postId, user.getUsername());
+            log.info("Post [{}] deleted from the user [{}] requested Posts list", postId, user.getUsername());
         }
 
         List<User> confirmedUsers = post.getConfirmedUsers();
 
         // Check if user already exists in Post's Confirmed User list
         if(confirmedUsers.contains(user)) {
-            log.info("User [{}] already exists in confirmed users list for post{}. Check again", user.getUsername(), postId);
+            log.info("User [{}] already exists in confirmed users list for post [{}]. Check again", user.getUsername(), postId);
         }
         else {
             // Add user to confirmedUsers array
@@ -283,13 +301,18 @@ public class PostService {
 
         List<Post> reminderPosts = user.getReminderPosts();
 
+        if (reminderPosts == null) {
+            reminderPosts = new ArrayList<>();
+        }
+
         if(reminderPosts.contains(post)) {
-            log.info("Post {} already exists in User [{}] reminder bucket list of posts!!", postId, user.getUsername());
+            log.info("Post [{}] already exists in User [{}] reminder bucket list of posts!!", postId, user.getUsername());
         }
         else {
             // Add post to user's reminder posts list
             reminderPosts.add(post);
-            log.info("Post {} added to User [{}] reminder Posts list", postId, user.getUsername());
+            log.info("Post [{}] added to User [{}] reminder Posts list", postId, user.getUsername());
+            log.info("Number of Requested Posts for User [{}] are: [{}]", username, user.getRequestedPosts().size());
         }
 
         post.setInterestedUsers(interestedUsers);
@@ -297,11 +320,14 @@ public class PostService {
         post.setConfirmedUsers(confirmedUsers);
         user.setReminderPosts(reminderPosts);
 
-        this.postRepository.save(post);
-        this.userRepository.save(user);
+        postRepository.save(post);
+        userRepository.save(user);
 
-        log.info("For Post {}, added User [{}] to Confirmed Users list {}, removed from Interested Users {}, so the confirmed posts are {}",
-                postId, username, confirmedUsers, interestedUsers, reminderPosts);
+        log.info("Number of Reminder Posts for User [{}] are: [{}]", username, user.getReminderPosts().size());
+        log.info("Number of Interested Users for Post [{}] are: [{}]", postId, post.getInterestedUsers().size());
+        log.info("Number of Confirmed Users for Post [{}] are: [{}]", postId, post.getConfirmedUsers().size());
+        log.info("For Post {}, added User [{}] to Confirmed Users list, removed from Interested Users List",
+                postId, username);
         return 1;
     }
 
@@ -315,7 +341,7 @@ public class PostService {
             return -1;
         }
 
-        Post post = this.postRepository.findById(postId).get();
+        Post post = postRepository.findById(postId).get();
         User user = userRepository.findByUsername(username).get();
 
         // Check if the User is Authorized to Reject the User
@@ -339,7 +365,7 @@ public class PostService {
 
             return 1;
         }
-        log.info("User [{}] NOT removed from Interested Users list", username);
+        log.info("User [{}] NOT rejected", username);
         return -1;
     }
 
@@ -365,8 +391,9 @@ public class PostService {
             return -1;
         }
 
-        Post post = this.postRepository.findById(postId).get();
+        Post post = postRepository.findById(postId).get();
         if (!checkUserExistInDBWithUsername(username)) {
+            log.info("User [{}] should not be in Confirmed Users list of Post [{}]. Check and Delete!!", username, postId);
             return -1;
         }
 
@@ -388,86 +415,82 @@ public class PostService {
         confirmedUsers.remove(user);
         post.setConfirmedUsers(confirmedUsers);
         postRepository.save(post);
-        log.info("Post {} removed from User [{}] Reminder Posts list", postId, username);
+        log.info("Post [{}] removed from User [{}] Reminder Posts list", postId, username);
 
         // Delete Post from User's Reminder Posts List
         List<Post> reminderPosts = user.getReminderPosts();
         reminderPosts.remove(post);
         user.setReminderPosts(reminderPosts);
         userRepository.save(user);
-        log.info("User [{}] removed from Confirmed Users list {}", username, confirmedUsers);
+        log.info("User [{}] removed from Confirmed Users list [{}]", username, confirmedUsers);
 
         return 1;
     }
 
     // Like a Post by User
-    public int likeAPost(Long postId, Long userId) {
+    public int likeAPost(Long postId, String token) {
         if(!checkPostExistInDB(postId)) {
             return -1;
         }
 
-        if(!checkUserExistInDB(userId)) {
-            return -1;
-        }
+        String username = jwtService.extractUsername(token.substring(7));
 
-        Post post = this.postRepository.findById(postId).get();
-        Long[] likes = post.getLikes();
-        if(ArrayUtils.contains(likes, userId)) {
-            log.info("User {} has already liked the post {}", userId, postId);
+        Post post = postRepository.findById(postId).get();
+        String[] likes = post.getLikes() != null ? post.getLikes() : new String[]{};
+        if(ArrayUtils.contains(likes, username)) {
+            log.info("User [{}] has already liked the post [{}]", username, postId);
             return 0;
         }
 
         // Add user to likes list of the post
-        likes = ArrayUtils.add(likes, userId);
+        likes = ArrayUtils.add(likes, username);
         post.setLikes(likes);
-        this.postRepository.save(post);
+        postRepository.save(post);
 
-        log.info("User {} has liked the post {}, and add to LIKES list of the Post", userId, postId);
+        log.info("User [{}] has liked the post [{}], and added to LIKES list of the Post", username, postId);
         return 1;
     }
 
     // GET All Likes on post
-    public Long[] getAllLikesOnPost(Long postId) {
+    public String[] getAllLikesOnPost(Long postId) {
         if(!checkPostExistInDB(postId)) {
             return null;
         }
 
-        Post post = this.postRepository.findById(postId).get();
-        Long[] likes = post.getLikes();
+        Post post = postRepository.findById(postId).get();
+        String[] likes = post.getLikes();
 
         if(ArrayUtils.isEmpty(likes)) {
-            log.info("No LIKES given to the Post {}", postId);
+            log.info("No LIKES given to the Post [{}]", postId);
         }
         else {
-            log.info("No. of Likes given to the Post {} are: {}", postId, likes.length);
+            log.info("No. of Likes given to the Post [{}] are: [{}]", postId, likes.length);
         }
 
-        return likes;
+        return likes != null ? likes : new String[]{};
     }
 
     // Remove a Like on post by user
-    public int removeAlikeOnPost(Long postId, Long userId) {
+    public int removeAlikeOnPost(Long postId, String token) {
         if(!checkPostExistInDB(postId)) {
             return -1;
         }
 
-        if(!checkUserExistInDB(userId)) {
-            return -1;
-        }
+        String username = jwtService.extractUsername(token.substring(7));
 
-        Post post = this.postRepository.findById(postId).get();
-        Long[] likes = post.getLikes();
-        if(!ArrayUtils.contains(likes, userId)) {
-            log.info("User {} has NOT liked the post {}", userId, postId);
+        Post post = postRepository.findById(postId).get();
+        String[] likes = post.getLikes() != null ? post.getLikes() : new String[]{};
+        if(!ArrayUtils.contains(likes, username)) {
+            log.info("User [{}] has NOT liked the post [{}]", username, postId);
             return 0;
         }
 
         // Remove user from the LIKES list of the post
-        likes = ArrayUtils.removeElement(likes, userId);
+        likes = ArrayUtils.removeElement(likes, username);
         post.setLikes(likes);
-        this.postRepository.save(post);
+        postRepository.save(post);
 
-        log.info("User {} has dis-liked the post {}, and removed from LIKES list of the Post", userId, postId);
+        log.info("User [{}] has dis-liked the post [{}], and removed from LIKES list of the Post", username, postId);
         return 1;
     }
 
@@ -477,15 +500,15 @@ public class PostService {
             return null;
         }
 
-        Post post = this.postRepository.findById(postId).get();
+        Post post = postRepository.findById(postId).get();
 
         // Add Hashtags to current Hashtags
-        String[] hashtags = post.getHashtags();
+        String[] hashtags = post.getHashtags() != null ? post.getHashtags() : new String[]{};
         hashtags = ArrayUtils.addAll(hashtags, newHashtags);
         post.setHashtags(hashtags);
-        this.postRepository.save(post);
+        postRepository.save(post);
 
-        log.info("New Hashtags Added to post {} : {}", postId, hashtags);
+        log.info("New Hashtags Added to post [{}] : {}", postId, hashtags);
         return post.getHashtags();
     }
 
@@ -495,7 +518,9 @@ public class PostService {
             return null;
         }
 
-        return this.postRepository.findById(postId).get().getHashtags();
+        String[] hashtagsOfPost = postRepository.findById(postId).get().getHashtags();
+
+        return hashtagsOfPost != null ? hashtagsOfPost : new String[]{};
     }
 
     // UPDATE Hashtags to Current Hashtags Post
@@ -504,12 +529,12 @@ public class PostService {
             return null;
         }
 
-        Post post = this.postRepository.findById(postId).get();
+        Post post = postRepository.findById(postId).get();
 
         // Replace Hashtags
         String[] OldHashtags = post.getHashtags();
         post.setHashtags(newHashtags);
-        this.postRepository.save(post);
+        postRepository.save(post);
 
         log.info("Old Hashtags: {} of Post {} are removed", OldHashtags, postId);
         log.info("New Hashtags {} Added to post {}", newHashtags, postId);
@@ -522,13 +547,19 @@ public class PostService {
             return -1;
         }
 
-        Post post = this.postRepository.findById(postId).get();
+        Post post = postRepository.findById(postId).get();
 
         // Delete Hashtag
         String[] hashtags = post.getHashtags();
+
+        if (!ArrayUtils.contains(hashtags, hashtag)) {
+            log.info("Hashtag [{}] does not exist for Post [{}]", hashtag, postId);
+            return 0;
+        }
+
         hashtags = ArrayUtils.removeElement(hashtags, hashtag);
         post.setHashtags(hashtags);
-        this.postRepository.save(post);
+        postRepository.save(post);
 
         log.info("Hashtag [{}] deleted from Post {}", hashtag, postId);
         return 1;

@@ -73,19 +73,19 @@ public class PostController {
         return this.postService.deleteConfirmedUser(postId, username, token);
     }
 
-    @PostMapping("likePost/{postId}/{userId}")
-    public int likeAPost(@PathVariable("postId") Long postId, @PathVariable("userId") Long userId) {
-        return this.postService.likeAPost(postId, userId);
+    @PostMapping("likePost/{postId}")
+    public int likeAPost(@PathVariable("postId") Long postId, @RequestHeader("Authorization") String token) {
+        return this.postService.likeAPost(postId, token);
     }
 
     @GetMapping("getAllLikesOnPost/{postId}")
-    public Long[] getAllLikesOnPost(@PathVariable("postId") Long postId) {
+    public String[] getAllLikesOnPost(@PathVariable("postId") Long postId) {
         return this.postService.getAllLikesOnPost(postId);
     }
 
-    @DeleteMapping("removeAlikeOnPost/{postId}/{userId}")
-    public int removeAlikeOnPost(@PathVariable("postId") Long postId, @PathVariable("userId") Long userId) {
-        return this.postService.removeAlikeOnPost(postId, userId);
+    @DeleteMapping("removeAlikeOnPost/{postId}")
+    public int removeAlikeOnPost(@PathVariable("postId") Long postId, @RequestHeader("Authorization") String token) {
+        return this.postService.removeAlikeOnPost(postId, token);
     }
 
     @PostMapping("addHashtags/{postId}")

@@ -51,7 +51,7 @@ public class Post {
 
     private String[] hashtags;
 
-    private Long[] likes;
+    private String[] likes;
 
     private Long[] comments;
 
