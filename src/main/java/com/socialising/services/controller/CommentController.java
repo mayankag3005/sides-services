@@ -23,8 +23,8 @@ public class CommentController {
     }
 
     @PostMapping("addCommentOnPost/{postId}")
-    public Comment addCommentOnPost(@PathVariable("postId") Long postId, @RequestBody Comment newComment) {
-        return this.commentService.addCommentOnPost(postId, newComment);
+    public Comment addCommentOnPost(@PathVariable("postId") Long postId, @RequestBody Comment newComment, @RequestHeader("Authorization") String token) {
+        return commentService.addCommentOnPost(postId, newComment, token);
     }
 
     @GetMapping("getAllCommentsOnPost/{postId}")
@@ -33,8 +33,8 @@ public class CommentController {
     }
 
     @DeleteMapping("deleteCommentOnPost/{postId}/{commentId}")
-    public int deleteCommentOnPost(@PathVariable("postId") Long postId, @PathVariable("commentId") Long commentId) {
-        return this.commentService.deleteCommentOnPost(postId, commentId);
+    public int deleteCommentOnPost(@PathVariable("postId") Long postId, @PathVariable("commentId") Long commentId, @RequestHeader("Authorization") String token) {
+        return this.commentService.deleteCommentOnPost(postId, commentId, token);
     }
 
     @PostMapping("likeComment/{commentId}")
