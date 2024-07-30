@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 public interface TagRepository extends JpaRepository<Tag, Long> {
 
     @Query(value = "SELECT * FROM socialise.tag WHERE tag=?", nativeQuery = true)
-    Tag findByTagName(String tagname);
+    Tag findByTagName(String tagName);
 
     @Transactional
     @Modifying

@@ -22,8 +22,19 @@ public class PostController {
 
     private final PostService postService;
 
+    private boolean checkTokenValidity(String token) {
+        if (!token.contains("Bearer ") || token.length() < 8) {
+            log.info("It is an invalid token. Pass the valid token!");
+            return false;
+        }
+        return true;
+    }
+
     @PostMapping("addPost")
     public Post addPost(@RequestBody Post post, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
         return this.postService.addPost(post, token);
     }
 
@@ -39,27 +50,42 @@ public class PostController {
     }
 
     @DeleteMapping("deletePost/{postId}")
-    public void deletePostById(@PathVariable Long postId, @RequestHeader("Authorization") String token) {
-        this.postService.deletePost(postId, token);
+    public int deletePostById(@PathVariable Long postId, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return -1;
+        }
+        return this.postService.deletePost(postId, token);
     }
 
     @PostMapping("interestedUserRequest/{postId}")
     public int postUserRequest(@PathVariable("postId") Long postId, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return -1;
+        }
         return this.postService.postUserRequest(postId, token);
     }
 
     @GetMapping("getInterestedUsers/{postId}")
-    public List<String> getInterestedUsers(@PathVariable Long postId) {
-        return this.postService.getInterestedUsers(postId);
+    public List<String> getInterestedUsers(@PathVariable Long postId, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.postService.getInterestedUsers(postId, token);
     }
 
     @PostMapping("acceptInterestedUser/{postId}/{username}")
     public int acceptInterestedUser(@PathVariable("postId") Long postId, @PathVariable("username") String username, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return -1;
+        }
         return this.postService.acceptInterestedUser(postId, username, token);
     }
 
     @PostMapping("rejectInterestedUser/{postId}/{username}")
     public int rejectInterestedUser(@PathVariable("postId") Long postId, @PathVariable("username") String username, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return -1;
+        }
         return this.postService.rejectInterestedUser(postId, username, token);
     }
 
@@ -70,11 +96,17 @@ public class PostController {
 
     @DeleteMapping("deleteConfirmedUser/{postId}/{username}")
     public int deleteConfirmedUser(@PathVariable("postId") Long postId, @PathVariable("username") String username, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return -1;
+        }
         return this.postService.deleteConfirmedUser(postId, username, token);
     }
 
     @PostMapping("likePost/{postId}")
     public int likeAPost(@PathVariable("postId") Long postId, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return -1;
+        }
         return this.postService.likeAPost(postId, token);
     }
 
@@ -85,6 +117,9 @@ public class PostController {
 
     @DeleteMapping("removeAlikeOnPost/{postId}")
     public int removeAlikeOnPost(@PathVariable("postId") Long postId, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return -1;
+        }
         return this.postService.removeAlikeOnPost(postId, token);
     }
 

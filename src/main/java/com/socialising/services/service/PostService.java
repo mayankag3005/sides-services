@@ -7,6 +7,7 @@ import com.socialising.services.model.User;
 import com.socialising.services.repository.ImageRepository;
 import com.socialising.services.repository.PostRepository;
 import com.socialising.services.repository.UserRepository;
+import io.jsonwebtoken.ExpiredJwtException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
@@ -45,14 +46,19 @@ public class PostService {
         return false;
     }
 
-//    private boolean checkUserExistInDB(Long userId) {
-//        if(userRepository.findById(userId).isPresent()) {
-//            log.info("User [{}] exist in DB", userId);
-//            return true;
-//        }
-//        log.info("User {} does not exists, Please Sign Up!!", userId);
-//        return false;
-//    }
+    private String getUsernameFromToken(String token) {
+        try {
+            String username = jwtService.extractUsername(token.substring(7));
+            log.info("Requested User is [{}]", username);
+            return username;
+        } catch (ExpiredJwtException e) {
+            log.info("The token has expired. Please Login again!!");
+            return "";
+        } catch (Exception e) {
+            log.info("Error fetching username from token: {}", e.getMessage());
+            return "";
+        }
+    }
 
     private boolean checkUserExistInDBWithUsername(String username) {
         if(userRepository.findByUsername(username).isPresent()) {
@@ -129,7 +135,7 @@ public class PostService {
     }
 
     // DELETE Post by ID
-    public void deletePost(Long postId, String token) {
+    public int deletePost(Long postId, String token) {
         if(checkPostExistInDB(postId)) {
 
             Post post = this.postRepository.findById(postId).get();
@@ -141,7 +147,7 @@ public class PostService {
 
             if ( !checkUserOwnerOfPostAndRole(token, ownerUsername) ) {
                 log.info("User is not authorized to delete the Post");
-                return;
+                return -1;
             }
 
             // Get the Confirmed Users list of Post
@@ -155,10 +161,6 @@ public class PostService {
             if (post.getInterestedUsers() != null) {
                 interestedUsers  = post.getInterestedUsers();
             }
-
-            // Delete Post from DB
-            postRepository.deleteById(postId);
-            log.info("Post with Post ID: {} deleted from DB", postId);
 
             // Delete the post from Confirmed Users Reminder Posts list
             if(!confirmedUsers.isEmpty()) {
@@ -181,7 +183,14 @@ public class PostService {
                     log.info("Post [{}] removed from User [{}'s] Requested Posts list", postId, interestedUser.getUsername());
                 }
             }
+
+            // Delete Post from DB
+            postRepository.deleteById(postId);
+            log.info("Post with Post ID: {} deleted from DB", postId);
+
+            return 1;
         }
+        return -1;
     }
 
     // Interested User Request for a Post
@@ -233,10 +242,17 @@ public class PostService {
 
     // Get All Interested Users for a Post
     // This method checks if a post exists in the database, retrieves the list of interested users, logs the appropriate message, and returns the usernames of the interested users.
-    public List<String> getInterestedUsers(Long postId) {
+    public List<String> getInterestedUsers(Long postId, String token) {
         if(checkPostExistInDB(postId)) {
 
-            List<User> interestedUsers = postRepository.findById(postId).get().getInterestedUsers();
+            Post post = postRepository.findById(postId).get();
+
+            if (!checkUserOwnerOfPostAndRole(token, post.getOwnerUser().getUsername())) {
+                log.info("User is not authorized to get the interested Users");
+                return null;
+            }
+
+            List<User> interestedUsers = post.getInterestedUsers();
 
             if(interestedUsers.isEmpty()) {
                 log.info("No Interested Users for Post {}", postId);

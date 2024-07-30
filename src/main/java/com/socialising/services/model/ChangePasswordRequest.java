@@ -1,10 +1,11 @@
 package com.socialising.services.model;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ChangePasswordRequest {
 
     private String currentPassword;

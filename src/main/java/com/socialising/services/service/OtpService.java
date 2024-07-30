@@ -40,6 +40,11 @@ public class OtpService {
     }
 
     public String generateOtp(String phoneNumber) {
+        if (phoneNumber.isEmpty()) {
+            log.info("Please provide a valid Phone Number");
+            return "";
+        }
+
         PhoneNumber to = new PhoneNumber(phoneNumber);
         PhoneNumber from = new PhoneNumber(twilioConfig.getTRIAL_NUMBER());
         String otp = getRandomOtp(phoneNumber);
@@ -56,6 +61,11 @@ public class OtpService {
     }
 
     public String generateOtpForEmail(String email) {
+        if (email.isEmpty()) {
+            log.info("Please provide a valid Email");
+            return "";
+        }
+
         String otp = getRandomOtp(email);
         String otpMessage = "Dear Customer, Your OTP is " + otp + ". Use this otp to log in to the Application";
         System.out.println("OTP MESSAGE: " + otpMessage);

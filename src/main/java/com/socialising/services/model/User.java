@@ -1,5 +1,6 @@
 package com.socialising.services.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.socialising.services.constants.Role;
 import com.socialising.services.constants.Status;
@@ -42,7 +43,8 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @JsonManagedReference
+//    @JsonManagedReference
+    @JsonIgnore
     @OneToMany(mappedBy = "user")
     private List<Token> tokens;
 
@@ -83,6 +85,8 @@ public class User implements UserDetails {
 
     private String occupation;
 
+    private String[] friendsRequested;
+
     private String[] friendRequests;
 
     private String[] friends;
@@ -90,7 +94,8 @@ public class User implements UserDetails {
     private String[] tags;
 
     @OneToMany(mappedBy = "ownerUser")
-    @JsonManagedReference
+//    @JsonManagedReference
+    @JsonIgnore
     private List<Post> posts;
 
     @ManyToMany
@@ -100,7 +105,8 @@ public class User implements UserDetails {
             inverseJoinColumns = @JoinColumn(name = "interestedPosts_id")
 
     )
-    @JsonManagedReference
+//    @JsonManagedReference
+    @JsonIgnore
     private List<Post> requestedPosts;
 
     @ManyToMany
@@ -110,7 +116,8 @@ public class User implements UserDetails {
             inverseJoinColumns = @JoinColumn(name = "reminderPosts_id")
 
     )
-    @JsonManagedReference
+//    @JsonManagedReference
+    @JsonIgnore
     private List<Post> reminderPosts;
 
     @Override

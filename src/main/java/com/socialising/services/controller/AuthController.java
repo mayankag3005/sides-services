@@ -74,4 +74,11 @@ public class AuthController {
     public Map<String, Object> verifyEmailOtp(@RequestBody AuthRequest authenticationRequest) {
         return authenticationService.verifyOtp(authenticationRequest, "email");
     }
+
+    // Testing
+    @GetMapping("/getUsernameFromToken")
+    public String getUsernameFromToken(@RequestHeader("Authorization") String token) {
+        return authenticationService.getUsernameFromToken(token);
+    }
+
 }

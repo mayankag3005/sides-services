@@ -24,11 +24,12 @@ public class ChatController {
 
     private final SimpMessagingTemplate messagingTemplate;
 
+    // Message sent to /app/chat are processed here
     @MessageMapping("/chat")
     public void processMessage(@Payload ChatMessage chatMessage) {
         ChatMessage savedMessage = chatMessageService.saveMessage(chatMessage);
 
-        // john/queue/messages for john to recieve messages
+        // john/queue/messages for john to receive messages
         messagingTemplate.convertAndSendToUser(chatMessage.getRecipientId(), "/queue/messages",
                 ChatNotification.builder()
                         .id(savedMessage.getId())

@@ -1,6 +1,7 @@
 package com.socialising.services.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -22,7 +23,8 @@ public class Post {
 
     @ManyToOne
     @JoinColumn(name = "userId")
-    @JsonBackReference
+//    @JsonBackReference
+    @JsonIgnore
     private User ownerUser;
 
     private String description;
@@ -56,10 +58,12 @@ public class Post {
     private Long[] comments;
 
     @ManyToMany(mappedBy = "requestedPosts")
-    @JsonBackReference
+//    @JsonBackReference
+    @JsonIgnore
     private List<User> interestedUsers;
 
     @ManyToMany(mappedBy = "reminderPosts")
-    @JsonBackReference
+//    @JsonBackReference
+    @JsonIgnore
     private List<User> confirmedUsers;
 }

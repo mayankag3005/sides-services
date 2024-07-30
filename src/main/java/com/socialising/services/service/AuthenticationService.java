@@ -55,8 +55,10 @@ public class AuthenticationService {
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
 
     public AuthenticationResponse register(RegisterRequest request) {
+        // Generate a unique user Id
         Long userId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
-        // create a user object
+
+        // Create a new user object
         var user = User.builder()
                 .userId(userId)
                 .firstName(request.getFirstname())
@@ -65,18 +67,22 @@ public class AuthenticationService {
                 .email(request.getEmail())
                 .phoneNumber(request.getPhoneNumber())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .role(Role.USER)
                 .build();
 
+        // Save the user to the Repository
         var savedUser = userRepository.save(user);
 
-        var jwtToken = jwtService.generateToken(user);
-        var refreshToken = jwtService.generateRefreshToken(user);
+        // Generate JWT Token
+        var jwtToken = jwtService.generateToken(savedUser);
+        var refreshToken = jwtService.generateRefreshToken(savedUser);
 
+        // Save the JWT Token
         saveUserToken(savedUser, jwtToken);
 
-        log.info("User [{}] registered successfully", user.getUsername());
+        log.info("User [{}] registered successfully", savedUser.getUsername());
 
+        // Return the Authentication Response
         return AuthenticationResponse.builder()
                 .accessToken(jwtToken)
                 .refreshToken(refreshToken)
@@ -127,7 +133,16 @@ public class AuthenticationService {
         // check if username is null or the user is already authenticated
         if (username != null) {
             // Get the user Details from the DB
-            var user = this.userRepository.findByUsername(username).orElseThrow();
+            var userOpt = this.userRepository.findByUsername(username);
+
+            // Check if user exists in DB
+            if (userOpt.isEmpty()) {
+                log.info("User does not exist in DB. Remove username ");
+                return;
+            }
+
+            // Get the user
+            User user = userOpt.get();
 
             // check if token and user wrt token is valid or not
             if(jwtService.isTokenValid(refreshToken, user)) {
@@ -251,4 +266,12 @@ public class AuthenticationService {
     }
 
 
+    public String getUsernameFromToken(String token) {
+        String username = jwtService.extractUsername(token.substring(7));
+        if (username == null) {
+            log.info("No username fetched from token");
+            return "";
+        }
+        return username;
+    }
 }

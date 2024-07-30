@@ -338,9 +338,10 @@ class PostServiceTest {
         when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
         // When
-        postService.deletePost(postId, mockJwtToken);
+        int result = postService.deletePost(postId, mockJwtToken);
 
         // Then
+        assertEquals(-1, result);
         verify(postRepository, times(1)).findById(postId);
         verify(postRepository, never()).deleteById(postId);
     }
@@ -356,9 +357,10 @@ class PostServiceTest {
         when(userRepository.findByUsername(ownerUsername)).thenReturn(Optional.of(ownerUser));
 
         // When
-        postService.deletePost(postId, mockJwtToken);
+        int result = postService.deletePost(postId, mockJwtToken);
 
         // Then
+        assertEquals(1, result);
         verify(postRepository, times(2)).findById(postId);
         verify(postRepository).deleteById(postId);
 //        assertEquals(log.info()).info("Post with Post ID: {} deleted from DB", postId);
@@ -375,9 +377,10 @@ class PostServiceTest {
         when(userRepository.findByUsername(adminUsername)).thenReturn(Optional.of(adminUser));
 
         // When
-        postService.deletePost(postId, mockJwtToken);
+        int result = postService.deletePost(postId, mockJwtToken);
 
         // Then
+        assertEquals(1, result);
         verify(postRepository, times(2)).findById(postId);
         verify(postRepository).deleteById(postId);
 //        assertEquals(log.info()).info("Post with Post ID: {} deleted from DB", postId);
@@ -394,9 +397,10 @@ class PostServiceTest {
         when(userRepository.findByUsername(otherUsername)).thenReturn(Optional.of(otherUser));
 
         // When
-        postService.deletePost(postId, token);
+        int result = postService.deletePost(postId, token);
 
         // Then
+        assertEquals(-1, result);
         verify(postRepository, times(2)).findById(postId);
         verify(postRepository, never()).deleteById(postId);
     }
@@ -423,9 +427,10 @@ class PostServiceTest {
         when(userRepository.findByUsername(ownerUsername)).thenReturn(Optional.of(ownerUser));
 
         // When
-        postService.deletePost(postId, token);
+        int result = postService.deletePost(postId, token);
 
         // Then
+        assertEquals(1, result);
         verify(postRepository, times(2)).findById(postId);
         verify(postRepository).deleteById(postId);
         verify(userRepository).save(otherUser);
@@ -613,15 +618,18 @@ class PostServiceTest {
     @Test
     public void should_get_interested_users_when_users_exist() {
         // Given
+        String token = "Bearer mock.jwt.token";
         List<User> interestedUsers = new ArrayList<>();
         interestedUsers.add(otherUser);
         testPost.setInterestedUsers(interestedUsers);
 
         // Mock
         when(postRepository.findById(postId)).thenReturn(Optional.of(testPost));
+        when(jwtService.extractUsername(token.substring(7))).thenReturn(ownerUsername);
+        when(userRepository.findByUsername(ownerUsername)).thenReturn(Optional.of(ownerUser));
 
         // When
-        List<String> responseInterestedUsers = postService.getInterestedUsers(postId);
+        List<String> responseInterestedUsers = postService.getInterestedUsers(postId, token);
 
         // Then
         assertNotNull(responseInterestedUsers);
@@ -632,11 +640,16 @@ class PostServiceTest {
 
     @Test
     public void should_get_zero_interested_users_when_users_does_not_exist() {
+        // Given
+        String token = "Bearer mock.jwt.token";
+
         // Mock
         when(postRepository.findById(postId)).thenReturn(Optional.of(testPost));
+        when(jwtService.extractUsername(token.substring(7))).thenReturn(ownerUsername);
+        when(userRepository.findByUsername(ownerUsername)).thenReturn(Optional.of(ownerUser));
 
         // When
-        List<String> responseInterestedUsers = postService.getInterestedUsers(postId);
+        List<String> responseInterestedUsers = postService.getInterestedUsers(postId, token);
 
         // Then
         assertNotNull(responseInterestedUsers);
@@ -646,11 +659,14 @@ class PostServiceTest {
 
     @Test
     public void should_get_null_for_interested_users_when_post_does_not_exist() {
+        // Given
+        String token = "Bearer mock.jwt.token";
+
         // Mock
         when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
         // When
-        List<String> responseInterestedUsers = postService.getInterestedUsers(postId);
+        List<String> responseInterestedUsers = postService.getInterestedUsers(postId, token);
 
         // Then
         assertNull(responseInterestedUsers);
