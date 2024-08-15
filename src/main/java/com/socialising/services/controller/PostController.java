@@ -39,7 +39,7 @@ public class PostController {
     }
 
     @GetMapping("getAllPosts")
-    @PreAuthorize("hasAuthority('admin:read')")
+//    @PreAuthorize("hasAuthority('admin:read')")
     public ArrayList<Post> getAllPosts() {
         return this.postService.getAllPosts();
     }
