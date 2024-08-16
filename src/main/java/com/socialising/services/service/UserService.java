@@ -188,39 +188,54 @@ public class UserService {
 
         User authUser = userRepository.findByUsername(username).get();
 
-        User updatedUser = User.builder()
-                .userId(authUser.getUserId())
-                .username(authUser.getUsername())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .email(user.getEmail())
-                .phoneNumber(authUser.getPhoneNumber())
-                .password(authUser.getPassword())
-                .role(authUser.getRole())
-                .dob(user.getDob())
-                .age(user.getAge())
-                .gender(user.getGender())
-                .religion(user.getReligion())
-                .education(user.getEducation())
-                .occupation(user.getOccupation())
-                .maritalStatus(user.getMaritalStatus())
-                .city(user.getCity())
-                .state(user.getState())
-                .homeCity(user.getHomeCity())
-                .homeState(user.getHomeState())
-                .country(user.getCountry())
+        authUser.setFirstName(user.getFirstName());
+        authUser.setLastName(user.getLastName());
+        authUser.setDob(user.getDob());
+        authUser.setAge(user.getAge());
+        authUser.setGender(user.getGender());
+        authUser.setReligion(user.getReligion());
+        authUser.setEducation(user.getEducation());
+        authUser.setOccupation(user.getOccupation());
+        authUser.setMaritalStatus(user.getMaritalStatus());
+        authUser.setCity(user.getCity());
+        authUser.setState(user.getState());
+        authUser.setHomeCity(user.getHomeCity());
+        authUser.setHomeState(user.getHomeState());
+        authUser.setCountry(user.getCountry());
+
+//        User updatedUser = User.builder()
+//                .userId(authUser.getUserId())
+//                .username(authUser.getUsername())
+//                .firstName(user.getFirstName())
+//                .lastName(user.getLastName())
+//                .email(user.getEmail())
+//                .phoneNumber(authUser.getPhoneNumber())
+//                .password(authUser.getPassword())
+//                .role(authUser.getRole())
+//                .dob(user.getDob())
+//                .age(user.getAge())
+//                .gender(user.getGender())
+//                .religion(user.getReligion())
+//                .education(user.getEducation())
+//                .occupation(user.getOccupation())
+//                .maritalStatus(user.getMaritalStatus())
+//                .city(user.getCity())
+//                .state(user.getState())
+//                .homeCity(user.getHomeCity())
+//                .homeState(user.getHomeState())
+//                .country(user.getCountry())
 //                .friendRequests(user.getFriendRequests() != null ? user.getFriendRequests() : new String[]{})
 //                .friends(user.getFriends() != null ? user.getFriends() : new String[]{})
 //                .tags(user.getTags() != null ? user.getTags() : new String[]{})
 //                .posts(user.getPosts() != null ? user.getPosts() : new ArrayList<>())
 //                .requestedPosts(user.getRequestedPosts() != null ? user.getRequestedPosts() : new ArrayList<>())
 //                .reminderPosts(user.getReminderPosts() != null ? user.getReminderPosts() : new ArrayList<>())
-                .build();
+//                .build();
 
         try {
-            userRepository.save(updatedUser);
+            userRepository.save(authUser);
             log.info("User Details updated in the DB");
-            return updatedUser;
+            return authUser;
         } catch (Exception e) {
             log.info(e.getMessage());
             return user;
