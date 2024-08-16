@@ -8,7 +8,9 @@ import com.socialising.services.model.ChangePasswordRequest;
 import com.socialising.services.model.Image;
 import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
+import com.socialising.services.model.nosql.ImageMongo;
 import com.socialising.services.repository.*;
+import com.socialising.services.repository.nosql.ImageMongoRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.security.Principal;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -38,6 +41,7 @@ public class UserService {
     private final TokenRepository tokenRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final ImageMongoRepository imageMongoRepository;
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
@@ -702,104 +706,6 @@ public class UserService {
         return user.getTags();
     }
 
-    // Add User Display Picture to DB
-    public Image addUserDP(MultipartFile file, String token) throws Exception {
-
-        String username = getUsernameFromToken(token);
-
-        if(file == null || file.isEmpty()) {
-            log.info("File cannot be null or Empty");
-            return null;
-        }
-
-        try {
-            // Create Image from File
-            String fileName = StringUtils.cleanPath(file.getOriginalFilename());
-            Long imageId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
-
-            // Create New Image
-            Image image = new Image(imageId, fileName, file.getContentType(), file.getBytes());
-
-            log.info("Image Id: {}", image.getImageId());
-            log.info("Image Filename: {}", image.getFilename());
-            log.info("Image Type: {}", image.getMimeType());
-
-            // Save Image to DB
-            imageRepository.save(image);
-
-            // Save New ImageId to User - DP ID
-            User user = this.userRepository.findByUsername(username).get();
-            Long oldUserDpId = user.getUserDPId();
-            user.setUserDPId(image.getImageId());
-            userRepository.save(user);
-
-            // Save New ImageId to User - DP ID
-//            user.setUserDPId(imageId);
-//            userRepository.save(user);
-
-            // Delete old DP from image repo
-            if (oldUserDpId != null && imageRepository.findById(oldUserDpId).isPresent()) {
-                imageRepository.deleteById(oldUserDpId);
-            }
-
-            log.info("Display Picture saved for User [{}]", username);
-
-            return image;
-        } catch (Exception e) {
-            log.info("Error Uploading Image: {}", e.getMessage());
-            return null;
-        }
-
-    }
-
-    // GET User DP
-    public Image getUserDP(String token) throws Exception {
-        String username = getUsernameFromToken(token);
-        log.info("DP Requested for USER: [{}]", username);
-
-        try {
-            User user = userRepository.findByUsername(username).get();
-//            userDP.setFile(ImageUtil.decompressImage(userDP.getFile()));
-
-            if(!checkImageExistInDB(user.getUserDPId())) {
-                log.info("User has no DP. Please add one!");
-                user.setUserDPId(null);
-                userRepository.save(user);
-                return null;
-            }
-
-            Image userDP = imageRepository.findById(user.getUserDPId()).get();
-            log.info("User DP: [{}]", userDP.getFilename());
-            return userDP;
-
-        } catch (Exception e) {
-            log.info("Error getting User DP. Please try again!! -> {}", e.getMessage());
-            return null;
-        }
-    }
-
-    // Remove user DP
-    public int removeUserDP(String token) {
-        String username = getUsernameFromToken(token);
-        User user = userRepository.findByUsername(username).get();
-        Long userDpId = user.getUserDPId();
-        try {
-            if (userDpId != null) {
-                user.setUserDPId(null);
-                imageRepository.deleteById(userDpId);
-                userRepository.save(user);
-
-                log.info("USER [{}] DP Removed successfully", username);
-                return 1;
-            } else {
-                log.info("User [{}] DP does not exist", username);
-                return 0;
-            }
-        } catch (Exception e) {
-            log.info("User [{}] DP NOT Removed due to : {}", username, e.getMessage());
-            return -1;
-        }
-    }
 
     // CHAT Based Services for user
 
@@ -839,4 +745,191 @@ public class UserService {
         userRepository.save(user);
         log.info("New Password Set Successfully");
     }
+
+    // Mongo APIs for User Profile Picture
+
+    public ImageMongo addUserProfilePicture(MultipartFile image, String token) throws IOException {
+        if (image == null || image.isEmpty()) {
+            log.info("Please provide an image");
+            return null;
+        }
+
+        String username = getUsernameFromToken(token);
+
+        // Get user from DB
+        User user = userRepository.findByUsername(username).get();
+
+        var existingDP = imageMongoRepository.findByAssociatedUsername(username);
+
+        String fileName = StringUtils.cleanPath(image.getOriginalFilename());
+
+        // Create new image
+        ImageMongo imageMongo = new ImageMongo();
+        imageMongo.setId(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
+        imageMongo.setData(image.getBytes());
+        imageMongo.setSize(image.getSize());
+        imageMongo.setFormat(image.getContentType());
+        imageMongo.setFileName(fileName);
+        imageMongo.setType("profile_picture");
+        imageMongo.setAssociatedUsername(user.getUsername());
+        imageMongo.setUploadTimestamp(System.currentTimeMillis());
+
+        // save new image in db
+        imageMongoRepository.save(imageMongo);
+
+        if (existingDP.isPresent()) {
+            log.info("User DP exists already. Removing it");
+            ImageMongo existingImage = existingDP.get();
+            imageMongoRepository.delete(existingImage);
+        }
+
+        // Save image id in user dp id
+        user.setUserDPId(imageMongo.getId());
+
+        userRepository.save(user);
+        log.info("User DP added successfully");
+
+        return imageMongo;
+    }
+
+    public ImageMongo getUserProfilePicture(String token) {
+        String username = getUsernameFromToken(token);
+
+        var existingDP = imageMongoRepository.findByAssociatedUsername(username);
+
+        if(existingDP.isPresent()) {
+            log.info("User DP exists");
+            return existingDP.get();
+        }
+        log.info("User DP does not exists");
+        return null;
+    }
+
+    public int removeUserProfilePicture(String token) {
+        String username = getUsernameFromToken(token);
+
+        // Get user from DB
+        User user = userRepository.findByUsername(username).get();
+
+        var existingDP = imageMongoRepository.findByAssociatedUsername(username);
+
+        // Check if DP exists
+        if (existingDP.isEmpty()) {
+            log.info("User DP does not exists in DB");
+            return -1;
+        }
+
+        log.info("User DP exists already. Deleting it");
+
+        // Removing DP from DB
+        imageMongoRepository.delete(existingDP.get());
+
+        // Save null in user dp id
+        user.setUserDPId("");
+
+        userRepository.save(user);
+
+        log.info("User DP removed successfully");
+
+        return 1;
+    }
+
+    // Add User Display Picture to DB
+//    public Image addUserDP(MultipartFile file, String token) throws Exception {
+//
+//        String username = getUsernameFromToken(token);
+//
+//        if(file == null || file.isEmpty()) {
+//            log.info("File cannot be null or Empty");
+//            return null;
+//        }
+//
+//        try {
+//            // Create Image from File
+//            String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+//            Long imageId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
+//
+//            // Create New Image
+//            Image image = new Image(imageId, fileName, file.getContentType(), file.getBytes());
+//
+//            log.info("Image Id: {}", image.getImageId());
+//            log.info("Image Filename: {}", image.getFilename());
+//            log.info("Image Type: {}", image.getMimeType());
+//
+//            // Save Image to DB
+//            imageRepository.save(image);
+//
+//            // Save New ImageId to User - DP ID
+//            User user = this.userRepository.findByUsername(username).get();
+//            Long oldUserDpId = user.getUserDPId();
+//            user.setUserDPId(image.getImageId());
+//            userRepository.save(user);
+//
+//            // Save New ImageId to User - DP ID
+////            user.setUserDPId(imageId);
+////            userRepository.save(user);
+//
+//            // Delete old DP from image repo
+//            if (oldUserDpId != null && imageRepository.findById(oldUserDpId).isPresent()) {
+//                imageRepository.deleteById(oldUserDpId);
+//            }
+//
+//            log.info("Display Picture saved for User [{}]", username);
+//
+//            return image;
+//        } catch (Exception e) {
+//            log.info("Error Uploading Image: {}", e.getMessage());
+//            return null;
+//        }
+//
+//    }
+
+    // GET User DP
+//    public Image getUserDP(String token) throws Exception {
+//        String username = getUsernameFromToken(token);
+//        log.info("DP Requested for USER: [{}]", username);
+//
+//        try {
+//            User user = userRepository.findByUsername(username).get();
+////            userDP.setFile(ImageUtil.decompressImage(userDP.getFile()));
+//
+//            if(!checkImageExistInDB(user.getUserDPId())) {
+//                log.info("User has no DP. Please add one!");
+//                user.setUserDPId(null);
+//                userRepository.save(user);
+//                return null;
+//            }
+//
+//            Image userDP = imageRepository.findById(user.getUserDPId()).get();
+//            log.info("User DP: [{}]", userDP.getFilename());
+//            return userDP;
+//
+//        } catch (Exception e) {
+//            log.info("Error getting User DP. Please try again!! -> {}", e.getMessage());
+//            return null;
+//        }
+//    }
+
+    // Remove user DP
+//    public int removeUserDP(String token) {
+//        String username = getUsernameFromToken(token);
+//        User user = userRepository.findByUsername(username).get();
+//        Long userDpId = user.getUserDPId();
+//        try {
+//            if (userDpId != null) {
+//                user.setUserDPId(null);
+//                imageRepository.deleteById(userDpId);
+//                userRepository.save(user);
+//
+//                log.info("USER [{}] DP Removed successfully", username);
+//                return 1;
+//            } else {
+//                log.info("User [{}] DP does not exist", username);
+//                return 0;
+//            }
+//        } catch (Exception e) {
+//            log.info("User [{}] DP NOT Removed due to : {}", username, e.getMessage());
+//            return -1;
+//        }
+//    }
 }

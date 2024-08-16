@@ -4,11 +4,12 @@ import com.socialising.services.config.JwtService;
 import com.socialising.services.constants.Role;
 import com.socialising.services.constants.Status;
 import com.socialising.services.model.ChangePasswordRequest;
-import com.socialising.services.model.Image;
 import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
+import com.socialising.services.model.nosql.ImageMongo;
 import com.socialising.services.model.token.Token;
 import com.socialising.services.repository.*;
+import com.socialising.services.repository.nosql.ImageMongoRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +40,7 @@ class UserServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private ImageRepository imageRepository;
+    private ImageMongoRepository imageMongoRepository;
 
     @Mock
     private PostRepository postRepository;
@@ -1453,18 +1454,14 @@ class UserServiceTest {
         // Given
         String mockJwtToken = "Bearer mock.jwt.token";
 
-        // Mock
-        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
-        when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
-
         // When
-        Image result = userService.addUserDP(null, mockJwtToken);
+        ImageMongo result = userService.addUserProfilePicture(null, mockJwtToken);
 
         // Then
         assertNull(result);
-        verify(jwtService, times(1)).extractUsername(mockJwtToken.substring(7));
+        verify(jwtService, never()).extractUsername(mockJwtToken.substring(7));
         verify(userRepository, never()).findByUsername(testUsername);
-        verify(imageRepository, never()).save(any(Image.class));
+        verify(imageMongoRepository, never()).save(any(ImageMongo.class));
     }
 
     @Test
@@ -1478,17 +1475,14 @@ class UserServiceTest {
                 new byte[0]
         );
 
-        // Mock
-        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
-
         // When
-        Image result = userService.addUserDP(file, mockJwtToken);
+        ImageMongo result = userService.addUserProfilePicture(file, mockJwtToken);
 
         // Then
         assertNull(result);
-        verify(jwtService, times(1)).extractUsername(mockJwtToken.substring(7));
+        verify(jwtService, never()).extractUsername(mockJwtToken.substring(7));
         verify(userRepository, never()).findByUsername(testUsername);
-        verify(imageRepository, never()).save(any(Image.class));
+        verify(imageMongoRepository, never()).save(any(ImageMongo.class));
     }
 
     @Test
@@ -1501,83 +1495,80 @@ class UserServiceTest {
                 "image/jpeg",
                 "some image content".getBytes()
         );
-        Long imageId = 654321L;
-        Image expectedImage = new Image(imageId, "test.jpg", "image/jpeg", "some image content".getBytes());
+
+        String imageId = "654321";
+        ImageMongo expectedImage = new ImageMongo();
+        expectedImage.setId(imageId);
+        expectedImage.setFileName("test.jpg");
+        expectedImage.setFormat("image/jpeg");
+        expectedImage.setData("some image content".getBytes());
 
         // Mock
         when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
         when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
-        when(imageRepository.save(any(Image.class))).thenReturn(expectedImage);
+        when(imageMongoRepository.findByAssociatedUsername(testUsername)).thenReturn(Optional.empty());
+        when(imageMongoRepository.save(any(ImageMongo.class))).thenReturn(expectedImage);
         when(userRepository.save(testUser)).thenReturn(testUser);
 
         // When
-        Image result = userService.addUserDP(file, mockJwtToken);
+        ImageMongo result = userService.addUserProfilePicture(file, mockJwtToken);
 
         // Then
         assertNotNull(result);
-        assertNotEquals(0, result.getImageId());
-        assertEquals("test.jpg", result.getFilename());
+        assertNotEquals("0", result.getId());
+        assertEquals("test.jpg", result.getFileName());
         verify(jwtService, times(1)).extractUsername(mockJwtToken.substring(7));
         verify(userRepository, times(1)).findByUsername(testUsername);
         verify(userRepository, times(1)).save(testUser);
-        verify(imageRepository, times(1)).save(any(Image.class));
+        verify(imageMongoRepository, times(1)).save(any(ImageMongo.class));
     }
 
     @Test
-    public void should_add_add_dp_when_file_is_proper_and_remove_old_user_dp() throws Exception {
+    public void should_add_dp_when_file_is_proper_and_remove_old_user_dp() throws Exception {
         // Given
         String mockJwtToken = "Bearer mock.jwt.token";
-        testUser.setUserDPId(123456L);
+        testUser.setUserDPId("123456");
+        ImageMongo existingImage = new ImageMongo();
+        existingImage.setId("123456");
+        existingImage.setFileName("old.jpg");
+        existingImage.setFormat("image/jpeg");
+        existingImage.setData("old image content".getBytes());
+
         file = new MockMultipartFile(
                 "file",
                 "test.jpg",
                 "image/jpeg",
                 "some image content".getBytes()
         );
-        Long imageId = 654321L;
-        Image expectedImage = new Image(imageId, "test.jpg", "image/jpeg", "some image content".getBytes());
+
+        String imageId = "654321";
+        ImageMongo expectedImage = new ImageMongo();
+        expectedImage.setId(imageId);
+        expectedImage.setFileName("test.jpg");
+        expectedImage.setFormat("image/jpeg");
+        expectedImage.setData("some image content".getBytes());
 
         // Mock
         when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
         when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
-        when(imageRepository.save(any(Image.class))).thenReturn(expectedImage);
+        when(imageMongoRepository.findByAssociatedUsername(testUsername)).thenReturn(Optional.of(existingImage));
+        when(imageMongoRepository.save(any(ImageMongo.class))).thenReturn(expectedImage);
         when(userRepository.save(testUser)).thenReturn(testUser);
-        when(imageRepository.findById(123456L)).thenReturn(Optional.of(new Image(123456L, "old.jpg", "image/jpeg", new byte[0])));
 
         // When
-        Image result = userService.addUserDP(file, mockJwtToken);
+        ImageMongo result = userService.addUserProfilePicture(file, mockJwtToken);
 
         // Then
         assertNotNull(result);
-        assertNotEquals(0, result.getImageId());
-        assertEquals("test.jpg", result.getFilename());
+        assertNotEquals("0", result.getId());
+        assertEquals("test.jpg", result.getFileName());
         verify(jwtService, times(1)).extractUsername(mockJwtToken.substring(7));
         verify(userRepository, times(1)).findByUsername(testUsername);
         verify(userRepository, times(1)).save(testUser);
-        verify(imageRepository, times(1)).save(any(Image.class));
+        verify(imageMongoRepository, times(1)).save(any(ImageMongo.class));
     }
 
     // getUserDP
-
-    @Test
-    public void should_not_get_dp_when_user_not_exist() throws Exception {
-        // Given
-        String mockJwtToken = "Bearer mock.jwt.token";
-        testUser.setUserDPId(123456L);
-        Image image = new Image(123456L, "test.jpg", "image/jpeg", "some image content".getBytes());
-
-        // Mock
-        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
-        when(userRepository.findByUsername(testUsername)).thenReturn(Optional.empty());
-
-        // When
-        Image result = userService.getUserDP(mockJwtToken);
-
-        // Then
-        assertNull(result);
-        verify(userRepository, times(1)).findByUsername(testUsername);
-        verify(imageRepository, never()).findById(anyLong());
-    }
 
     @Test
     public void should_not_get_dp_when_no_dp() throws Exception {
@@ -1586,79 +1577,39 @@ class UserServiceTest {
 
         // Mock
         when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
-        when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
+        when(imageMongoRepository.findByAssociatedUsername(testUsername)).thenReturn(Optional.empty());
 
         // When
-        Image result = userService.getUserDP(mockJwtToken);
+        ImageMongo result = userService.getUserProfilePicture(mockJwtToken);
 
         // Then
         assertNull(result);
-        verify(userRepository, times(1)).findByUsername(testUsername);
-        verify(imageRepository, never()).findById(anyLong());
+        verify(imageMongoRepository, times(1)).findByAssociatedUsername(testUsername);
     }
 
     @Test
     public void should_get_dp_when_dp_exists() throws Exception {
         // Given
         String mockJwtToken = "Bearer mock.jwt.token";
-        testUser.setUserDPId(123456L);
-        Image image = new Image(123456L, "test.jpg", "image/jpeg", "some image content".getBytes());
+        testUser.setUserDPId("123456");
+        ImageMongo expectedImage = new ImageMongo();
+        expectedImage.setId("123456");
+        expectedImage.setFileName("test.jpg");
+        expectedImage.setFormat("image/jpeg");
+        expectedImage.setData("some image content".getBytes());
 
         // Mock
         when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
-        when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
-        when(imageRepository.findById(123456L)).thenReturn(Optional.of(image));
+        when(imageMongoRepository.findByAssociatedUsername(testUsername)).thenReturn(Optional.of(expectedImage));
 
         // When
-        Image result = userService.getUserDP(mockJwtToken);
+        ImageMongo result = userService.getUserProfilePicture(mockJwtToken);
 
         // Then
         assertNotNull(result);
-        assertEquals(123456L, result.getImageId());
-        assertEquals("test.jpg", result.getFilename());
-        verify(userRepository, times(1)).findByUsername(testUsername);
-        verify(imageRepository, times(2)).findById(123456L);
-    }
-
-    @Test
-    public void should_not_get_dp_when_image_not_found() throws Exception {
-        // Given
-        String mockJwtToken = "Bearer mock.jwt.token";
-        testUser.setUserDPId(123456L);
-        Image image = new Image(123456L, "test.jpg", "image/jpeg", "some image content".getBytes());
-
-        // Mock
-        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
-        when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
-        when(imageRepository.findById(123456L)).thenReturn(Optional.empty());
-
-        // When
-        Image result = userService.getUserDP(mockJwtToken);
-
-        // Then
-        assertNull(result);
-        verify(userRepository, times(1)).findByUsername(testUsername);
-        verify(imageRepository, times(1)).findById(123456L);
-    }
-
-    @Test
-    public void test_get_dp_while_exception_handling() throws Exception {
-        // Given
-        String mockJwtToken = "Bearer mock.jwt.token";
-        testUser.setUserDPId(123456L);
-        Image image = new Image(123456L, "test.jpg", "image/jpeg", "some image content".getBytes());
-
-        // Mock
-        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
-        when(userRepository.findByUsername(testUsername)).thenThrow(new RuntimeException("Database error"));
-
-        // When
-        Image result = userService.getUserDP(mockJwtToken);
-
-        // Then
-        assertNull(result);
-        verify(userRepository, times(1)).findByUsername(testUsername);
-        verify(imageRepository, never()).findById(123456L);
+        assertEquals("123456", result.getId());
+        assertEquals("test.jpg", result.getFileName());
+        verify(imageMongoRepository, times(1)).findByAssociatedUsername(testUsername);
     }
 
     // removeUserDP
@@ -1671,14 +1622,15 @@ class UserServiceTest {
         // Mock
         when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
         when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
+        when(imageMongoRepository.findByAssociatedUsername(testUsername)).thenReturn(Optional.empty());
 
         // When
-        int result = userService.removeUserDP(mockJwtToken);
+        int result = userService.removeUserProfilePicture(mockJwtToken);
 
         // Then
-        assertEquals(0, result);
+        assertEquals(-1, result);
         verify(userRepository, times(1)).findByUsername(testUsername);
-        verify(imageRepository, never()).deleteById(anyLong());
+        verify(imageMongoRepository, never()).delete(any(ImageMongo.class));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -1686,43 +1638,29 @@ class UserServiceTest {
     public void should_remove_dp_when_dp_exists() throws Exception {
         // Given
         String mockJwtToken = "Bearer mock.jwt.token";
-        testUser.setUserDPId(123456L);
+        testUser.setUserDPId("123456");
+
+        ImageMongo expectedImage = new ImageMongo();
+        expectedImage.setId("123456");
+        expectedImage.setFileName("test.jpg");
+        expectedImage.setFormat("image/jpeg");
+        expectedImage.setData("some image content".getBytes());
 
         // Mock
         when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
         when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
+        when(imageMongoRepository.findByAssociatedUsername(testUsername)).thenReturn(Optional.of(expectedImage));
         when(userRepository.save(testUser)).thenReturn(testUser);
 
         // When
-        int result = userService.removeUserDP(mockJwtToken);
+        int result = userService.removeUserProfilePicture(mockJwtToken);
 
         // Then
         assertEquals(1, result);
-        assertNull(testUser.getUserDPId());
+        assertEquals("", testUser.getUserDPId());
         verify(userRepository, times(1)).findByUsername(testUsername);
-        verify(imageRepository, times(1)).deleteById(123456L);
+        verify(imageMongoRepository, times(1)).delete(expectedImage);
         verify(userRepository, times(1)).save(testUser);
-    }
-
-    @Test
-    public void test_remove_dp_with_exception_handling() throws Exception {
-        // Given
-        String mockJwtToken = "Bearer mock.jwt.token";
-        testUser.setUserDPId(123456L);
-
-        // Mock
-        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
-        when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
-        doThrow(new RuntimeException("Database error")).when(imageRepository).deleteById(anyLong());
-
-        // When
-        int result = userService.removeUserDP(mockJwtToken);
-
-        // Then
-        assertEquals(-1, result);
-        verify(userRepository, times(1)).findByUsername(testUsername);
-        verify(imageRepository, times(1)).deleteById(123456L);
-        verify(userRepository, never()).save(testUser);
     }
 
     // changePassword

@@ -56,7 +56,7 @@ public class User implements UserDetails {
 //    @JoinColumn(name = "userDPId")
 //    private Image userDP;
 
-    private Long userDPId;
+    private String userDPId;
 
     @Enumerated(EnumType.STRING)
     private Status status;              // to check whether is online / offline

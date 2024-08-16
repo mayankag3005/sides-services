@@ -5,6 +5,7 @@ import com.socialising.services.model.ChangePasswordRequest;
 import com.socialising.services.model.Image;
 import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
+import com.socialising.services.model.nosql.ImageMongo;
 import com.socialising.services.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
@@ -219,27 +220,27 @@ public class UserController {
     }
 
     @PostMapping("addUserDP")
-    public Image addUserDP(@RequestBody MultipartFile file, @RequestHeader("Authorization") String token) throws Exception {
+    public ImageMongo addUserDP(@RequestBody MultipartFile file, @RequestHeader("Authorization") String token) throws Exception {
         if (!checkTokenValidity(token)) {
             return null;
         }
-        return this.userDetailsService.addUserDP(file, token);
+        return this.userDetailsService.addUserProfilePicture(file, token);
     }
 
     @GetMapping("getUserDP")
-    public Image getImage(@RequestHeader("Authorization") String token) throws Exception {
+    public ImageMongo getUserProfilePicture(@RequestHeader("Authorization") String token) throws Exception {
         if (!checkTokenValidity(token)) {
             return null;
         }
-        return this.userDetailsService.getUserDP(token);
+        return this.userDetailsService.getUserProfilePicture(token);
     }
 
     @DeleteMapping("removeDP")
-    public int removeUserDP(@RequestHeader("Authorization") String token) {
+    public int removeUserProfilePicture(@RequestHeader("Authorization") String token) {
         if (!checkTokenValidity(token)) {
             return -1;
         }
-        return this.userDetailsService.removeUserDP(token);
+        return this.userDetailsService.removeUserProfilePicture(token);
     }
 
     // CHAT based APIs

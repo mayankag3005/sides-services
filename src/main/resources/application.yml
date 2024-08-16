@@ -20,3 +20,7 @@ application:
       refresh-token:
         expiration: 604800000  # 7 days
 
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/your_mongodb_db
