@@ -23,4 +23,4 @@ application:
 spring:
   data:
     mongodb:
-      uri: mongodb://localhost:27017/your_mongodb_db
+      uri: mongodb+srv://socialise_mongo:BjanTNfPZNWUIJUp@socialise.1kv3z.mongodb.net/chat
