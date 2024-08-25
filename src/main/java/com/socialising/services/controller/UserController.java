@@ -1,18 +1,21 @@
 package com.socialising.services.controller;
 
-import com.socialising.services.constants.Status;
+import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.socialising.services.model.ChangePasswordRequest;
 import com.socialising.services.model.Image;
+import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
 import com.socialising.services.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,13 +32,24 @@ public class UserController {
 
     private final UserService userDetailsService;
 
+    private boolean checkTokenValidity(String token) {
+        if (!token.contains("Bearer ") || token.length() < 8) {
+            log.info("It is an invalid token. Pass the valid token!");
+            return false;
+        }
+        return true;
+    }
+
+    // Add a User manually (Done by ADMIN only)
     @PostMapping("addUser")
-    public User addUser(@RequestBody User user) {
-        return this.userDetailsService.addUser(user);
+    @PreAuthorize("hasAuthority('admin:create')")
+    public User addUser(@RequestBody User user, @RequestHeader("Authorization") String token) {
+        return this.userDetailsService.addUser(user, token);
     }
 
     // Get All the Users
     @GetMapping("getAllUserDetails")
+    @PreAuthorize("hasAuthority('admin:read')")
     public ArrayList<User> getAllUserDetails() {
         return this.userDetailsService.getAllUserDetails();
     }
@@ -43,25 +57,46 @@ public class UserController {
     // Get User details
     @GetMapping("getUserDetails")
     public User getUserDetails(@RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
         return userDetailsService.getUserDetails(token);
     }
 
+    // Get User by Username
+    @GetMapping("detailsByUsername/{username}")
+    public User getUserById(@PathVariable String username) {
+        return this.userDetailsService.getUserByUsername(username);
+    }
+
     // Get user by ID
-    @GetMapping("details/{id}")
+    @GetMapping("detailsById/{id}")
+    @PreAuthorize("hasAuthority('admin:read')")
     public User getUserById(@PathVariable Long id) {
         return this.userDetailsService.getUserById(id);
     }
 
     // Get user by Phone Number
-    @GetMapping("getUserByPhoneNumber/{phonenumber}")
-    public User getUserByPhoneNumber(@PathVariable String phonenumber) {
-        return this.userDetailsService.getUserByPhoneNumber(phonenumber);
+    @GetMapping("detailsByPhoneNumber/{phoneNumber}")
+    @PreAuthorize("hasAuthority('admin:read')")
+    public User getUserByPhoneNumber(@PathVariable String phoneNumber) {
+        return this.userDetailsService.getUserByPhoneNumber(phoneNumber);
+    }
+
+     // Update user details
+    @PatchMapping("updateUserDetails")
+    public User updateUserDetails(@RequestBody User user, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.updateUserDetailsExceptUsernamePasswordAndDP(user, token);
     }
 
     // DELETE User by ID
-    @DeleteMapping("deleteUser/{userid}")
-    public int deleteUser(@PathVariable Long userid) {
-        return this.userDetailsService.deleteUser(userid);
+    @DeleteMapping("deleteUser/{userId}")
+    @PreAuthorize("hasAuthority('admin:delete')")
+    public int deleteUser(@PathVariable Long userId) {
+        return this.userDetailsService.deleteUser(userId);
     }
 
     //Search User by Word as username
@@ -76,76 +111,148 @@ public class UserController {
         return this.userDetailsService.searchUserByTag(tag);
     }
 
-    // To Send the Friend Request from User {userRequestId} to User {userid}
-    @PostMapping("sendFriendRequest/{fromuserid}/{touserid}")
-    public String sendFriendRequest(@PathVariable("fromuserid") Long fromuserid, @PathVariable("touserid") Long touserid) {
-        return this.userDetailsService.sendFriendRequest(fromuserid, touserid);
+    // To Send the Friend Request from User to User {toUsername}
+    @PostMapping("sendFriendRequest/{username}")
+    public String sendFriendRequest(@PathVariable("username") String toUsername, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return "Token Invalid";
+        }
+        return this.userDetailsService.sendFriendRequest(toUsername, token);
     }
 
     // To Accept the Friend Request of User {userRequestId} to User {userid}
-    @PostMapping("acceptFriendRequest/{userRequestId}/{userid}")
-    public String acceptFriendRequest(@PathVariable("userRequestId") Long userRequestId, @PathVariable("userid") Long userid) {
-        return this.userDetailsService.acceptFriendRequest(userRequestId, userid);
+    @PostMapping("acceptFriendRequest/{username}")
+    public String acceptFriendRequest(@PathVariable("username") String fromUsername, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return "Token Invalid";
+        }
+        return this.userDetailsService.acceptFriendRequest(fromUsername, token);
     }
 
     // To Remove/Delete the Friend Request from User {userRequestId} to User {userid}
-    @DeleteMapping("deleteFriendRequest/{fromuserid}/{touserid}")
-    public String deleteFriendRequest(@PathVariable("fromuserid") Long fromuserid, @PathVariable("touserid") Long touserid) {
-        return this.userDetailsService.deleteFriendRequest(fromuserid, touserid);
+    @DeleteMapping("deleteFriendRequest/{friendRequestUsername}")
+    public String deleteFriendRequest(@PathVariable("friendRequestUsername") String fromUsername, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return "Token invalid";
+        }
+        return this.userDetailsService.deleteFriendRequest(fromUsername, token);
     }
 
-    @GetMapping("getFriendRequestUsers/{userid}")
-    public ArrayList<User> getFriendRequestUsers(@PathVariable Long userid) {
-        return this.userDetailsService.getFriendRequestUsers(userid);
+    @GetMapping("getFriendRequestUsers")
+    public String[] getFriendRequestUsers(@RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.getFriendRequestUsers(token);
     }
 
-    @GetMapping("getFriends/{userid}")
-    public ArrayList<User> getFriendsOfUser(@PathVariable Long userid) {
-        return this.userDetailsService.getFriendsOfUser(userid);
+    @GetMapping("getFriendsRequested")
+    public String[] getFriendsRequestedByUser(@RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.getFriendsRequested(token);
     }
 
-    @GetMapping("deleteFriend/{userid}/{friendid}")
-    public int deleteFriend(@PathVariable("userid") Long userid, @PathVariable("friendid") Long friendid) {
-        return this.userDetailsService.deleteFriend(userid, friendid);
+    @GetMapping("getFriends")
+    public String[] getFriendsOfUser(@RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.getFriendsOfUser(token);
     }
 
-    @GetMapping("getReminderPosts/{userid}")
-    public Long[] getReminderPosts(@PathVariable Long userid) {
-        return this.userDetailsService.getReminderPosts(userid);
+    @DeleteMapping("deleteFriend/{friendUsername}")
+    public int deleteFriend(@PathVariable("friendUsername") String friendUsername, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return -1;
+        }
+        return this.userDetailsService.deleteFriend(friendUsername, token);
     }
 
-    @DeleteMapping("deleteReminderPost/{userid}/{postid}")
-    public Long[] deleteReminderPostsOfUser(@PathVariable("userid") Long userid, @PathVariable("postid") Long postid) {
-        return this.userDetailsService.deleteReminderPostsOfUser(userid, postid);
+    @GetMapping("getPosts")
+    public List<Post> getPostsOfUser(@RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.getPostsOfUser(token);
     }
 
-    @GetMapping("getTagsofUser/{userid}")
-    public String[] getTagsofUser(@PathVariable Long userid) {
-        return this.userDetailsService.getTagsofUser(userid);
+    @GetMapping("getRequestedPosts")
+    public List<Post> getRequestedPostsOfUser(@RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.getRequestedPostsOfUser(token);
     }
 
-    @PutMapping("updateTagsOfUser/{userid}")
-    public String[] updateTagsOfUser(@PathVariable Long userid, @RequestBody String[] newTags) {
-        return this.userDetailsService.updateTagsOfUser(userid, newTags);
+    @GetMapping("getReminderPosts")
+    public List<Post> getReminderPosts(@RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.getReminderPosts(token);
     }
 
-    @PostMapping("addUserDP/{userId}")
-    public Image addUserDP(@PathVariable Long userId, @RequestBody MultipartFile file) throws Exception {
-        return this.userDetailsService.addUserDP(userId, file);
+    @DeleteMapping("deleteReminderPost/{postId}")
+    public List<Post> deleteReminderPostsOfUser(@PathVariable("postId") Long postId, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.deleteReminderPostsOfUser(postId, token);
     }
 
-    @GetMapping("getUserDP/{userId}")
-    public Image getImage(@PathVariable Long userId) throws Exception {
-        return this.userDetailsService.getUserDP(userId);
+    @GetMapping("getTagsofUser")
+    public String[] getTagsOfUser(@RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.getTagsOfUser(token);
+    }
+
+    @PutMapping("updateTagsOfUser")
+    public String[] updateTagsOfUser(@RequestBody String[] newTags, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.updateTagsOfUser(newTags, token);
+    }
+
+    @PostMapping("addUserDP")
+    public Image addUserDP(@RequestBody MultipartFile file, @RequestHeader("Authorization") String token) throws Exception {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.addUserDP(file, token);
+    }
+
+    @GetMapping("getUserDP")
+    public Image getImage(@RequestHeader("Authorization") String token) throws Exception {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.getUserDP(token);
+    }
+
+    @DeleteMapping("removeDP")
+    public int removeUserDP(@RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return -1;
+        }
+        return this.userDetailsService.removeUserDP(token);
     }
 
     // CHAT based APIs
     @MessageMapping("/user.addUser")
     @SendTo("/user/public")
-    public User connectUser(@Payload User user) {
-        return this.userDetailsService.addUser(user);
+    public User connectUser(@Payload User user, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return this.userDetailsService.addUser(user, token);
     }
 
+    // All the users subscribed to /user/public will get to know that the user has disconnected
     @MessageMapping("/user.disconnectUser")
     @SendTo("/user/public")
     public User disconnect(@Payload User user) {

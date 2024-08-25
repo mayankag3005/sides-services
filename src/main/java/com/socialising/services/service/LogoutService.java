@@ -22,18 +22,24 @@ public class LogoutService implements LogoutHandler {
         final String jwt;
 
         if(authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.info("No Authorization header or Bearer token found.");
             return;
         }
 
         jwt = authHeader.substring(7);
         var storedToken = tokenRepository.findByToken(jwt)
                 .orElse(null);
-        // Invalidate the token
-        if (storedToken != null) {
-            storedToken.setExpired(true);
-            storedToken.setRevoked(true);
-            tokenRepository.save(storedToken);
-            log.info("User is logged out!!!");
+
+        if (storedToken == null) {
+            log.info("Token not found in repository.");
+            return;
         }
+
+        // Invalidate the token
+        storedToken.setExpired(true);
+        storedToken.setRevoked(true);
+        tokenRepository.save(storedToken);
+        log.info("User is logged out!!!");
+        log.info("User logged out successfully. Token invalidated.");
     }
 }

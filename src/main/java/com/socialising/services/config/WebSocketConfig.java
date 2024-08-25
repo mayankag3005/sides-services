@@ -25,8 +25,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         // Application Destination prefixes
+        // All the message sending endpoints will start with /app . Ex: /app/chat or /app/user.addUser or /app/user.disconnectUser
         registry.setApplicationDestinationPrefixes("/app");
+        // All the user subscribers will be using endpoints which start with /user . Ex: /user/public
+        // for general topics
         registry.enableSimpleBroker("/user");
+        // For specific user queues
         registry.setUserDestinationPrefix("/user");
     }
 

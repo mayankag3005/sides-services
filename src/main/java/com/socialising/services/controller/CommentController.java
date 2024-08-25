@@ -23,8 +23,8 @@ public class CommentController {
     }
 
     @PostMapping("addCommentOnPost/{postId}")
-    public Comment addCommentOnPost(@PathVariable("postId") Long postId, @RequestBody Comment newComment) {
-        return this.commentService.addCommentOnPost(postId, newComment);
+    public Comment addCommentOnPost(@PathVariable("postId") Long postId, @RequestBody Comment newComment, @RequestHeader("Authorization") String token) {
+        return commentService.addCommentOnPost(postId, newComment, token);
     }
 
     @GetMapping("getAllCommentsOnPost/{postId}")
@@ -33,22 +33,22 @@ public class CommentController {
     }
 
     @DeleteMapping("deleteCommentOnPost/{postId}/{commentId}")
-    public int deleteCommentOnPost(@PathVariable("postId") Long postId, @PathVariable("commentId") Long commentId) {
-        return this.commentService.deleteCommentOnPost(postId, commentId);
+    public int deleteCommentOnPost(@PathVariable("postId") Long postId, @PathVariable("commentId") Long commentId, @RequestHeader("Authorization") String token) {
+        return this.commentService.deleteCommentOnPost(postId, commentId, token);
     }
 
-    @PostMapping("likeComment/{commentId}/{userId}")
-    public int likeAComment(@PathVariable("commentId") Long commentId, @PathVariable("userId") Long userId) {
-        return this.commentService.likeAComment(commentId, userId);
+    @PostMapping("likeComment/{commentId}")
+    public int likeAComment(@PathVariable("commentId") Long commentId, @RequestHeader("Authorization") String token) {
+        return this.commentService.likeAComment(commentId, token);
     }
 
     @GetMapping("getAllLikesOnComment/{commentId}")
-    public Long[] getAllLikesOnComment(@PathVariable Long commentId) {
+    public String[] getAllLikesOnComment(@PathVariable Long commentId) {
         return this.commentService.getAllLikesOnComment(commentId);
     }
 
     @DeleteMapping("removeAlikeOnComment/{commentId}/{userId}")
-    public int removeAlikeOnPost(@PathVariable("commentId") Long commentId, @PathVariable("userId") Long userId) {
-        return this.commentService.removeAlikeOnPost(commentId, userId);
+    public int removeAlikeOnPost(@PathVariable("commentId") Long commentId, @RequestHeader("Authorization") String token) {
+        return this.commentService.removeAlikeOnPost(commentId, token);
     }
 }

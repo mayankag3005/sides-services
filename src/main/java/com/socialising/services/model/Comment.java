@@ -2,6 +2,7 @@ package com.socialising.services.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -13,6 +14,7 @@ import java.util.Random;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Comment {
 
     @Id
@@ -25,9 +27,5 @@ public class Comment {
 
     private String description;
 
-    private Long[] commentLikes;
-
-    public void setCommentId() {
-        this.commentId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
-    }
+    private String[] commentLikes;
 }

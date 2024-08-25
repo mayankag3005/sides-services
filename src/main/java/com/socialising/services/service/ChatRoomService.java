@@ -3,12 +3,14 @@ package com.socialising.services.service;
 import com.socialising.services.model.chat.ChatRoom;
 import com.socialising.services.repository.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
@@ -21,6 +23,7 @@ public class ChatRoomService {
                         var chatId = createChatId(senderId, recipientId);
                         return Optional.of(chatId);
                     }
+                    log.info("No Chat Room Created for [{}] and [{}]", senderId, recipientId);
                     return Optional.empty();
         });
     }
@@ -41,6 +44,8 @@ public class ChatRoomService {
 
         chatRoomRepository.save(senderRecipient);
         chatRoomRepository.save(recipientSender);
+
+        log.info("New Chat Room created: [{}]", chatId);
         return chatId;
     }
 }

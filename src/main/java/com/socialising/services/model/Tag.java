@@ -1,6 +1,7 @@
 package com.socialising.services.model;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,6 +13,7 @@ import java.util.Random;
 @Entity
 @Getter
 @Setter
+@Builder
 public class Tag implements Serializable {
 
     @Id
@@ -20,8 +22,4 @@ public class Tag implements Serializable {
 
     @Column(unique=true)
     private String tag;
-
-    public void setTagId() {
-        this.tagId = Long.valueOf(new DecimalFormat("000").format(new Random().nextInt(999)));
-    }
 }

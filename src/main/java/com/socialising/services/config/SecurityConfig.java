@@ -68,6 +68,7 @@ public class SecurityConfig {
 //            "/tag/**",
 //            "/comment/**",
 //            "/auth/user/**",
+//            "/api/v1/demo/**",
             "/auth/user/**"
     };
 }

@@ -42,7 +42,7 @@ public class TagController {
 
     @DeleteMapping("deleteTagByName/{tagName}")
     @PreAuthorize("hasAuthority('admin:delete')")
-    public void deleteTagByName(@PathVariable String tagName) {
-        this.tagService.deleteTagByName(tagName);
+    public int deleteTagByName(@PathVariable String tagName) {
+        return this.tagService.deleteTagByName(tagName);
     }
 }

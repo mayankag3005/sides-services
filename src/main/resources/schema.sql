@@ -1,6 +1,4 @@
-create table if not exists image (
+create table if not exists socialise.test (
     id serial primary key,
-    filename varchar(255) unique,
-    mime_type varchar(30),
     data bytea
-)
+);
