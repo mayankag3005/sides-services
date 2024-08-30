@@ -22,8 +22,9 @@ public class MessageMongoController {
     private final MessageMongoService messageMongoService;
 
     @PostMapping("/room/sendMessage")
-    public int sendMessage(ChatMsgDTO chatMsgDTO, @RequestHeader("Authorization") String token) throws IOException {
-        return messageMongoService.saveMessage(chatMsgDTO, token);
+    public ResponseEntity<?> sendMessage(ChatMsgDTO chatMsgDTO, @RequestHeader("Authorization") String token) throws IOException {
+        int val = messageMongoService.saveMessage(chatMsgDTO, token);
+        return ResponseEntity.ok(val);
     }
 
     @GetMapping("/room/getMessages/{roomId}")
@@ -32,8 +33,9 @@ public class MessageMongoController {
     }
 
     @PostMapping("/private/sendMessage")
-    public int sendPrivateMessage(@RequestBody ChatMsgPrivateDTO chatMsgPrivateDTO) throws IOException {
-        return messageMongoService.sendPrivateMessage(chatMsgPrivateDTO);
+    public ResponseEntity<?> sendPrivateMessage(@RequestBody ChatMsgPrivateDTO chatMsgPrivateDTO) throws IOException {
+        int val =  messageMongoService.sendPrivateMessage(chatMsgPrivateDTO);
+        return ResponseEntity.ok(val);
     }
 
     @GetMapping("/private/getMessages/{senderId}/{recipientId}")

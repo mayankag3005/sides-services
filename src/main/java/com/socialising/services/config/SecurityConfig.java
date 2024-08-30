@@ -62,13 +62,8 @@ public class SecurityConfig {
     }
 
     private static final String[] WHITE_LIST_URL = {
-//            "/comment/**",
-//            "/post/**",
-//            "/user/**",
-//            "/tag/**",
-//            "/comment/**",
-//            "/auth/user/**",
-//            "/api/v1/demo/**",
+            "/chat/**",
+            "/message/**",
             "/auth/user/**"
     };
 }
