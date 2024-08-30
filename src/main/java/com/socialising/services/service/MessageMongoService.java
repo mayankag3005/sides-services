@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
@@ -80,7 +81,7 @@ public class MessageMongoService {
                 .roomId(chatMsgDTO.getRoomId())
                 .senderId(senderUsername)
                 .content(chatMsgDTO.getContent())
-                .timestamp(new Timestamp(System.currentTimeMillis()))
+                .timestamp(new Date(System.currentTimeMillis()))
                 .status(MessageStatus.SENT)
                 .build();
 
@@ -128,7 +129,7 @@ public class MessageMongoService {
                 .roomId(chatId)
                 .senderId(chatMsgPrivateDTO.getSenderName())
                 .content(chatMsgPrivateDTO.getContent())
-                .timestamp(new Timestamp(System.currentTimeMillis()))
+                .timestamp(new Date(System.currentTimeMillis()))
                 .status(MessageStatus.SENT)
                 .build();
 
@@ -170,7 +171,7 @@ public class MessageMongoService {
         imageMongo.setFileName(fileName);
         imageMongo.setType("message_content");
         imageMongo.setAssociatedMessageId(messageId);
-        imageMongo.setUploadTimestamp(System.currentTimeMillis());
+        imageMongo.setUploadTimestamp(new Date(System.currentTimeMillis()));
 
         // save new image in db
         imageMongoRepository.save(imageMongo);
@@ -189,7 +190,7 @@ public class MessageMongoService {
         videoMongo.setVideoName(fileName);
         videoMongo.setType("message_content");
         videoMongo.setAssociatedMessageId(messageId);
-        videoMongo.setUploadTimestamp(System.currentTimeMillis());
+        videoMongo.setUploadTimestamp(new Date(System.currentTimeMillis()));
 
         // save new image in db
         videoMongoRepository.save(videoMongo);

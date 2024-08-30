@@ -4,6 +4,8 @@ import org.springframework.data.annotation.Id;
 import lombok.*;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.Date;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -28,7 +30,7 @@ public class ImageMongo {
 
     private String associatedMessageId; // Optional: message ID if the image is part of a message
 
-    private long uploadTimestamp; // Time when the image was uploaded
+    private Date uploadTimestamp; // Time when the image was uploaded
 
     private long size; // Size of the image in bytes
 }

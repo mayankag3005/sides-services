@@ -6,6 +6,7 @@ import lombok.*;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.sql.Timestamp;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -27,7 +28,7 @@ public class ChatMsg {
 
     private String videoContentId; // Video
 
-    private Timestamp timestamp;
+    private Date timestamp;
 
     private MessageStatus status; // "sent", "delivered", "seen"
 }

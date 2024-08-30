@@ -26,10 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.security.Principal;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -772,7 +769,7 @@ public class UserService {
         imageMongo.setFileName(fileName);
         imageMongo.setType("profile_picture");
         imageMongo.setAssociatedUsername(user.getUsername());
-        imageMongo.setUploadTimestamp(System.currentTimeMillis());
+        imageMongo.setUploadTimestamp(new Date(System.currentTimeMillis()));
 
         // save new image in db
         imageMongoRepository.save(imageMongo);

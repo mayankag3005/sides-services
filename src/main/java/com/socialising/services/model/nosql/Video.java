@@ -4,6 +4,8 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.Date;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -24,7 +26,7 @@ public class Video {
 
     private String associatedMessageId; // Optional: message ID if the video is part of a message
 
-    private long uploadTimestamp; // Time when the video was uploaded
+    private Date uploadTimestamp; // Time when the video was uploaded
 
     private long size; // Size of the video in bytes
 }

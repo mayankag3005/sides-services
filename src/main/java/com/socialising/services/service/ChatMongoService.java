@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -307,7 +308,7 @@ public class ChatMongoService {
         imageMongo.setFileName(fileName);
         imageMongo.setType("group_profile_picture");
         imageMongo.setAssociatedRoomId(roomId);
-        imageMongo.setUploadTimestamp(System.currentTimeMillis());
+        imageMongo.setUploadTimestamp(new Date(System.currentTimeMillis()));
 
         // save new image in db
         imageMongoRepository.save(imageMongo);
