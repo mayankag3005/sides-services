@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -113,14 +114,25 @@ public class MessageMongoService {
     public int sendPrivateMessage(ChatMsgPrivateDTO chatMsgPrivateDTO) throws IOException {
         String chatId = chatMsgPrivateDTO.getSenderName() + "_" + chatMsgPrivateDTO.getRecipientName();
 
-        // Create new private chat if not exists
+        // Create new private chat, if not exists
         if (!checkIfRoomExists(chatId)) {
-            ChatPrivateDTO chatPrivateDTO = new ChatPrivateDTO();
-            chatPrivateDTO.setSenderName(chatMsgPrivateDTO.getSenderName());
-            chatPrivateDTO.setRecipientName(chatMsgPrivateDTO.getRecipientName());
-            Chat privateChat = chatMongoService.createPrivateChat(chatPrivateDTO);
+            // Check if chat with opposite chatId exists
+            String secondaryChatId = chatMsgPrivateDTO.getRecipientName() + "_" + chatMsgPrivateDTO.getSenderName();
+            if(checkIfRoomExists(secondaryChatId)) {
+                log.info("Private exists with chat id: [{}]", secondaryChatId);
+                chatId = secondaryChatId;
+            } else {
+                // No chat exists. Creating new chat
+                ChatPrivateDTO chatPrivateDTO = new ChatPrivateDTO();
+                chatPrivateDTO.setSenderName(chatMsgPrivateDTO.getSenderName());
+                chatPrivateDTO.setRecipientName(chatMsgPrivateDTO.getRecipientName());
+                Chat privateChat = chatMongoService.createPrivateChat(chatPrivateDTO);
 
-            chatId = privateChat.getId();
+                chatId = privateChat.getId();
+                log.info("New chat creating while sending new message: [{}]", chatId);
+            }
+        } else {
+            log.info("Private exists with chat Id: [{}]", chatId);
         }
 
         // Create new Message
@@ -155,9 +167,24 @@ public class MessageMongoService {
 
     public List<ChatMsg> findChatMessages(String senderId, String recipientId) {
         String chatId = senderId + "_" + recipientId;
-        log.info("ChatId used is: [{}]", chatId);
 
-        return chatMsgRepository.findByRoomId(chatId);
+
+        List<ChatMsg> chatMessages = chatMsgRepository.findByRoomId(chatId);
+
+        if (chatMessages.isEmpty()) {
+            // Check if messages exist with opposite roomId
+            String secondaryId = recipientId + "_" + senderId;
+            List<ChatMsg> secondaryChatMessages = chatMsgRepository.findByRoomId(secondaryId);
+            if(!secondaryChatMessages.isEmpty()) {
+                log.info("Chat exists. ChatId used is: [{}]", secondaryId);
+                return secondaryChatMessages;
+            } else {
+                log.info("No chat exists between [{}] and [{}]", senderId, recipientId);
+                new ArrayList<>();
+            }
+        }
+        log.info("Chat exists. ChatId used is: [{}]", chatId);
+        return chatMessages;
     }
 
     private String saveImage(MultipartFile image, String messageId) throws IOException {

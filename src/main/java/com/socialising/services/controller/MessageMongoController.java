@@ -38,8 +38,8 @@ public class MessageMongoController {
         return ResponseEntity.ok(val);
     }
 
-    @GetMapping("/private/getMessages/{senderId}/{recipientId}")
-    public ResponseEntity<List<ChatMsg>> findChatMessages(@PathVariable("senderId") String senderId, @PathVariable("recipientId") String recipientId) {
-        return ResponseEntity.ok(messageMongoService.findChatMessages(senderId, recipientId));
+    @GetMapping("/private/getMessages/{userId1}/{userId2}")
+    public ResponseEntity<List<ChatMsg>> findChatMessages(@PathVariable("userId1") String userId1, @PathVariable("userId2") String userId2) {
+        return ResponseEntity.ok(messageMongoService.findChatMessages(userId1, userId2));
     }
 }

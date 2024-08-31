@@ -407,14 +407,21 @@ public class ChatMongoService {
         var chatRoomOpt = chatRepository.findById(privateChatId);
 
         if (chatRoomOpt.isEmpty()) {
-            if (createNewRoomIfNotExists) {
-                log.info("Creating new chat room since it does not exists");
 
-                return createPrivateChat(chatPrivateDTO).getId();
+            // check with opposite id
+            String secondaryChatId = chatPrivateDTO.getRecipientName() + "_" + chatPrivateDTO.getSenderName();
+            var secondaryChatRoomOpt = chatRepository.findById(secondaryChatId);
+            if(secondaryChatRoomOpt.isEmpty()) {
+                if (createNewRoomIfNotExists) {
+                    log.info("Creating new chat room since it does not exists");
+                    return createPrivateChat(chatPrivateDTO).getId();
+                } else {
+                    log.info("No chat room exists");
+                    return "";
+                }
             } else {
-                log.info("No chat room exists");
-
-                return "";
+                log.info("Chat room exists with id: [{}]", secondaryChatId);
+                secondaryChatRoomOpt.get().getId();
             }
         }
 

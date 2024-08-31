@@ -83,6 +83,6 @@ public class ChatMongoController {
 
     @GetMapping("/getPrivateChatId")
     public String getPrivateChatRoomId(@RequestBody ChatPrivateDTO chatPrivateDTO) {
-        return chatMongoService.getPrivateChatRoomId(chatPrivateDTO, true);
+        return chatMongoService.getPrivateChatRoomId(chatPrivateDTO, false);
     }
 }
