@@ -22,10 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -45,6 +42,8 @@ public class MessageMongoService {
     private final VideoRepository videoMongoRepository;
 
     private final JwtService jwtService;
+
+//    private final UserChatService userChatService;
 
     private String getUsernameFromToken(String token) {
         try {
@@ -67,6 +66,20 @@ public class MessageMongoService {
         }
         log.info("Chat Room does not exists");
         return false;
+    }
+
+    private void updateLastMessage(String roomId, String messageContent, String senderId, Date timestamp) {
+        Optional<Chat> chatRoomOptional = chatRepository.findById(roomId);
+
+        if (chatRoomOptional.isPresent()) {
+            Chat chat = chatRoomOptional.get();
+            chat.setLastMessageContent(messageContent);
+            chat.setLastMessageSenderId(senderId);
+            chat.setLastMessageTimestamp(timestamp);
+            chatRepository.save(chat);
+
+            log.info("Last message details updated for Chat [{}]", roomId);
+        }
     }
 
     public int saveMessage(ChatMsgDTO chatMsgDTO, String token) throws IOException {
@@ -101,6 +114,9 @@ public class MessageMongoService {
         // Save New Message to DB
         chatMsgRepository.save(chatMsg);
 
+        // update last message details in chat
+        updateLastMessage(chatMsgDTO.getRoomId(), chatMsgDTO.getContent(), senderUsername, chatMsg.getTimestamp());
+
         return 1;
     }
 
@@ -111,7 +127,15 @@ public class MessageMongoService {
         return chatMsgRepository.findByRoomId(roomId);
     }
 
-    public int sendPrivateMessage(ChatMsgPrivateDTO chatMsgPrivateDTO) throws IOException {
+    public int sendPrivateMessage(ChatMsgPrivateDTO chatMsgPrivateDTO, String token) throws IOException {
+        String username = getUsernameFromToken(token);
+
+        // Check if the user sending message is the authenticated user or not
+        if(!chatMsgPrivateDTO.getSenderName().equals(username)) {
+            log.info("User [{}] cannot send message from [{}] to [{}]", username, chatMsgPrivateDTO.getSenderName(), chatMsgPrivateDTO.getRecipientName());
+            return -1;
+        }
+
         String chatId = chatMsgPrivateDTO.getSenderName() + "_" + chatMsgPrivateDTO.getRecipientName();
 
         // Create new private chat, if not exists
@@ -126,7 +150,7 @@ public class MessageMongoService {
                 ChatPrivateDTO chatPrivateDTO = new ChatPrivateDTO();
                 chatPrivateDTO.setSenderName(chatMsgPrivateDTO.getSenderName());
                 chatPrivateDTO.setRecipientName(chatMsgPrivateDTO.getRecipientName());
-                Chat privateChat = chatMongoService.createPrivateChat(chatPrivateDTO);
+                Chat privateChat = chatMongoService.createPrivateChat(chatPrivateDTO, token);
 
                 chatId = privateChat.getId();
                 log.info("New chat creating while sending new message: [{}]", chatId);
@@ -162,12 +186,14 @@ public class MessageMongoService {
 
         log.info("New Private Message Saved in DB");
 
+        // update last message details in chat
+        updateLastMessage(chatId, chatMsgPrivateDTO.getContent(), chatMsgPrivateDTO.getSenderName(), chatMsg.getTimestamp());
+
         return 1;
     }
 
     public List<ChatMsg> findChatMessages(String senderId, String recipientId) {
         String chatId = senderId + "_" + recipientId;
-
 
         List<ChatMsg> chatMessages = chatMsgRepository.findByRoomId(chatId);
 
@@ -179,11 +205,11 @@ public class MessageMongoService {
                 log.info("Chat exists. ChatId used is: [{}]", secondaryId);
                 return secondaryChatMessages;
             } else {
-                log.info("No chat exists between [{}] and [{}]", senderId, recipientId);
-                new ArrayList<>();
+                log.info("No messages between [{}] and [{}]", senderId, recipientId);
+                return new ArrayList<>();
             }
         }
-        log.info("Chat exists. ChatId used is: [{}]", chatId);
+        log.info("Chat exists: [{}]", chatId);
         return chatMessages;
     }
 

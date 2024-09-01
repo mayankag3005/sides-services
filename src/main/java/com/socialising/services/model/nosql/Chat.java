@@ -6,6 +6,7 @@ import jakarta.persistence.Id;
 import lombok.*;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.Date;
 import java.util.List;
 
 @Getter
@@ -26,4 +27,8 @@ public class Chat {
     private ChatType type; // "1-1" or "group"
 
     private String infoId;  // Refers to GroupInfo if type is "group"
+
+    private String lastMessageContent;
+    private String lastMessageSenderId;
+    private Date lastMessageTimestamp;
 }

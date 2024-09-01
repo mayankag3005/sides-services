@@ -7,7 +7,9 @@ import com.socialising.services.model.nosql.Chat;
 import com.socialising.services.model.nosql.GroupInfo;
 import com.socialising.services.model.nosql.ImageMongo;
 import com.socialising.services.service.ChatMongoService;
+import com.twilio.http.Response;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,64 +27,71 @@ public class ChatMongoController {
     private final ChatMongoService chatMongoService;
 
     @PostMapping("/createRoom")
-    public Chat createRoom(@RequestBody ChatDTO chatDTO,  @RequestHeader("Authorization") String token) {
-        return chatMongoService.createGroupRoom(chatDTO, token);
+    public ResponseEntity<Chat> createRoom(@RequestBody ChatDTO chatDTO,  @RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(chatMongoService.createGroupRoom(chatDTO, token));
     }
 
     @PutMapping("/updateRoomInfo/{roomId}")
-    public GroupInfo updateRoomInfo(@PathVariable String roomId, @RequestBody GroupInfoDTO groupInfoDTO, @RequestHeader("Authorization") String token) {
-        return chatMongoService.updateGroupChatRoomDetails(roomId, groupInfoDTO, token);
+    public ResponseEntity<GroupInfo> updateRoomInfo(@PathVariable String roomId, @RequestBody GroupInfoDTO groupInfoDTO, @RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(chatMongoService.updateGroupChatRoomDetails(roomId, groupInfoDTO, token));
     }
 
     @GetMapping("/roomInfo/{roomId}")
-    public GroupInfo getRoomInfo(@PathVariable String roomId) {
-        return chatMongoService.getRoomInfo(roomId);
+    public ResponseEntity<GroupInfo> getRoomInfo(@PathVariable String roomId) {
+        return ResponseEntity.ok(chatMongoService.getRoomInfo(roomId));
     }
 
     @PostMapping("/addNewUser/{roomId}/{username}")
-    public List<String> addNewUserToRoom(@PathVariable("roomId") String roomId, @PathVariable("username") String username, @RequestHeader("Authorization") String token) {
-        return chatMongoService.addUserToRoom(roomId, username, token);
+    public ResponseEntity<List<String>> addNewUserToRoom(@PathVariable("roomId") String roomId, @PathVariable("username") String username, @RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(chatMongoService.addUserToRoom(roomId, username, token));
     }
 
     @GetMapping("/getUsers/{roomId}")
-    public List<String> addNewUserToRoom(@PathVariable("roomId") String roomId, @RequestHeader("Authorization") String token) {
-        return chatMongoService.getUsersOfRoom(roomId, token);
+    public ResponseEntity<List<String>> addNewUserToRoom(@PathVariable("roomId") String roomId, @RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(chatMongoService.getUsersOfRoom(roomId, token));
     }
 
     @DeleteMapping("/removeUser/{roomId}/{username}")
-    public int removeUserFromRoom(@PathVariable("roomId") String roomId, @PathVariable("username") String username, @RequestHeader("Authorization") String token) {
-        return chatMongoService.removeUserFromRoom(roomId, username, token);
+    public ResponseEntity<Integer> removeUserFromRoom(@PathVariable("roomId") String roomId, @PathVariable("username") String username, @RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(chatMongoService.removeUserFromRoom(roomId, username, token));
     }
 
     @DeleteMapping("/leaveRoom/{roomId}")
-    public int leaveRoom(@PathVariable("roomId") String roomId, @RequestHeader("Authorization") String token) {
-        return chatMongoService.leaveRoom(roomId, token);
+    public ResponseEntity<Integer> leaveRoom(@PathVariable("roomId") String roomId, @RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(chatMongoService.leaveRoom(roomId, token));
     }
 
     @PostMapping("/room/addDP/{roomId}")
-    public ImageMongo addRoomProfilePicture(@PathVariable String roomId, @RequestBody MultipartFile file) throws Exception {
-        return chatMongoService.addGroupProfilePicture(file, roomId);
+    public ResponseEntity<ImageMongo> addRoomProfilePicture(@PathVariable String roomId, @RequestBody MultipartFile file) throws Exception {
+        return ResponseEntity.ok(chatMongoService.addGroupProfilePicture(file, roomId));
     }
 
     @GetMapping("/room/getDP/{roomId}")
-    public ImageMongo getRoomProfilePicture(@PathVariable String roomId) throws Exception {
-        return chatMongoService.getGroupProfilePicture(roomId);
+    public ResponseEntity<ImageMongo> getRoomProfilePicture(@PathVariable String roomId) throws Exception {
+        return ResponseEntity.ok(chatMongoService.getGroupProfilePicture(roomId));
     }
 
     @DeleteMapping("/room/removeDP/{roomId}")
-    public int removeRoomProfilePicture(@PathVariable String roomId) {
-        return chatMongoService.removeGroupProfilePicture(roomId);
+    public ResponseEntity<Integer> removeRoomProfilePicture(@PathVariable String roomId) {
+        return ResponseEntity.ok(chatMongoService.removeGroupProfilePicture(roomId));
     }
 
     // 1-1 Chat
 
     @PostMapping("/createPrivateChat")
-    public Chat createPrivateChatRoom(@RequestBody ChatPrivateDTO chatPrivateDTO) {
-        return chatMongoService.createPrivateChat(chatPrivateDTO);
+    public ResponseEntity<Chat> createPrivateChatRoom(@RequestBody ChatPrivateDTO chatPrivateDTO, @RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(chatMongoService.createPrivateChat(chatPrivateDTO, token));
     }
 
     @GetMapping("/getPrivateChatId")
-    public String getPrivateChatRoomId(@RequestBody ChatPrivateDTO chatPrivateDTO) {
-        return chatMongoService.getPrivateChatRoomId(chatPrivateDTO, false);
+    public ResponseEntity<String> getPrivateChatRoomId(@RequestBody ChatPrivateDTO chatPrivateDTO) {
+        return ResponseEntity.ok(chatMongoService.getPrivateChatRoomId(chatPrivateDTO, false));
+    }
+
+    // User level
+
+    @GetMapping("/getChatsOfUser")
+    public ResponseEntity<List<String>> getChatsOfUser(@RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(chatMongoService.getChatsOfUser(token));
     }
 }

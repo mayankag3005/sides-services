@@ -22,19 +22,19 @@ public class MessageMongoController {
     private final MessageMongoService messageMongoService;
 
     @PostMapping("/room/sendMessage")
-    public ResponseEntity<?> sendMessage(ChatMsgDTO chatMsgDTO, @RequestHeader("Authorization") String token) throws IOException {
+    public ResponseEntity<Integer> sendMessage(ChatMsgDTO chatMsgDTO, @RequestHeader("Authorization") String token) throws IOException {
         int val = messageMongoService.saveMessage(chatMsgDTO, token);
         return ResponseEntity.ok(val);
     }
 
     @GetMapping("/room/getMessages/{roomId}")
-    public List<ChatMsg> getAllMessagesOfRoom(@PathVariable String roomId) {
-        return messageMongoService.getAllMessages(roomId);
+    public ResponseEntity<List<ChatMsg>> getAllMessagesOfRoom(@PathVariable String roomId) {
+        return ResponseEntity.ok(messageMongoService.getAllMessages(roomId));
     }
 
     @PostMapping("/private/sendMessage")
-    public ResponseEntity<?> sendPrivateMessage(@RequestBody ChatMsgPrivateDTO chatMsgPrivateDTO) throws IOException {
-        int val =  messageMongoService.sendPrivateMessage(chatMsgPrivateDTO);
+    public ResponseEntity<Integer> sendPrivateMessage(@RequestBody ChatMsgPrivateDTO chatMsgPrivateDTO, @RequestHeader("Authorization") String token) throws IOException {
+        int val =  messageMongoService.sendPrivateMessage(chatMsgPrivateDTO, token);
         return ResponseEntity.ok(val);
     }
 

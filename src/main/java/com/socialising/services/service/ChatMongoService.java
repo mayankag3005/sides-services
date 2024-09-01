@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -45,6 +46,8 @@ public class ChatMongoService {
     private final ImageMongoRepository imageMongoRepository;
 
     private final JwtService jwtService;
+
+    private final UserChatService userChatService;
 
     private String getUsernameFromToken(String token) {
         try {
@@ -111,6 +114,11 @@ public class ChatMongoService {
         chatRepository.save(chat);
 
         log.info("New Chat Saved in DB");
+
+        // Add the chat to all participants
+        for (String participant : chatDTO.getParticipants()) {
+            userChatService.addChatToUser(participant, chatRoomId);
+        }
 
         return chat;
     }
@@ -199,6 +207,9 @@ public class ChatMongoService {
 
         log.info("User [{}] added to Room", username);
 
+        // add the following chat to user chats
+        userChatService.addChatToUser(username, roomId);
+
         return chat.getParticipants();
     }
 
@@ -253,6 +264,9 @@ public class ChatMongoService {
 
         log.info("User [{}] removed from Room", username);
 
+        // Remove the chat from user chats
+        userChatService.removeChatFromUser(username, roomId);
+
         return 1;
     }
 
@@ -279,6 +293,9 @@ public class ChatMongoService {
         chatRepository.save(chat);
 
         log.info("User [{}] left the Room", username);
+
+        // Remove the chat from user chats
+        userChatService.removeChatFromUser(username, roomId);
 
         return 1;
     }
@@ -374,10 +391,17 @@ public class ChatMongoService {
 
     // private chat (1-1)
 
-    public Chat createPrivateChat(ChatPrivateDTO chatPrivateDTO) {
+    public Chat createPrivateChat(ChatPrivateDTO chatPrivateDTO, String token) {
         // check if all both senderName and recipient Name are valid and exists in DB
         if (userRepository.findByUsername(chatPrivateDTO.getSenderName()).isEmpty() || userRepository.findByUsername(chatPrivateDTO.getRecipientName()).isEmpty()) {
             log.info("One of the User does not exist in DB");
+            return null;
+        }
+
+        String username = getUsernameFromToken(token);
+
+        if(!username.equals(chatPrivateDTO.getSenderName()) && !username.equals(chatPrivateDTO.getRecipientName())) {
+            log.info("Only the logged in user can create chats between himself and other user");
             return null;
         }
 
@@ -397,6 +421,10 @@ public class ChatMongoService {
 
         log.info("New Private Chat Saved in DB");
 
+        // add chat to both the users chats
+        userChatService.addChatToUser(chatPrivateDTO.getSenderName(), privateChatIdAndName);
+        userChatService.addChatToUser(chatPrivateDTO.getRecipientName(), privateChatIdAndName);
+
         return chat;
     }
 
@@ -411,21 +439,27 @@ public class ChatMongoService {
             // check with opposite id
             String secondaryChatId = chatPrivateDTO.getRecipientName() + "_" + chatPrivateDTO.getSenderName();
             var secondaryChatRoomOpt = chatRepository.findById(secondaryChatId);
-            if(secondaryChatRoomOpt.isEmpty()) {
-                if (createNewRoomIfNotExists) {
-                    log.info("Creating new chat room since it does not exists");
-                    return createPrivateChat(chatPrivateDTO).getId();
-                } else {
-                    log.info("No chat room exists");
-                    return "";
-                }
-            } else {
+            if(secondaryChatRoomOpt.isPresent()) {
                 log.info("Chat room exists with id: [{}]", secondaryChatId);
-                secondaryChatRoomOpt.get().getId();
+                return secondaryChatRoomOpt.get().getId();
+            } else {
+                log.info("No chat room exists");
+                return "";
             }
         }
 
         return chatRoomOpt.get().getId();
+    }
+
+    // User level
+
+    public List<String> getChatsOfUser(String token) {
+        try {
+            return userChatService.getChatsOfUser(getUsernameFromToken(token));
+        } catch (Exception e) {
+            log.info("Error while fetching user chats: [{}]", e.getMessage());
+        }
+        return null;
     }
 
 
