@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
@@ -126,6 +127,17 @@ public class PostService {
 
         log.info("Total number of posts: {}", this.postRepository.count());
         return (ArrayList<Post>) this.postRepository.findAll();
+    }
+
+    // Get Posts of Authenticated user
+    public List<Post> getUserPosts(String token) {
+        String username = jwtService.extractUsername(token.substring(7));
+        return postRepository.findByOwnerUserUsername(username);
+    }
+
+    // Get Posts by Username
+    public List<Post> getPostsByUsername(String username) {
+        return postRepository.findByOwnerUserUsername(username);
     }
 
     //  GET Post by ID

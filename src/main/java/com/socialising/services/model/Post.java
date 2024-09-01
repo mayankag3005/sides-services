@@ -18,12 +18,11 @@ import java.util.List;
 public class Post {
 
     @Id
-    @Column(unique=true)
+    @Column(unique=true, nullable=false)
     private Long postId;
 
     @ManyToOne
-    @JoinColumn(name = "userId")
-//    @JsonBackReference
+    @JoinColumn(name = "username", referencedColumnName = "username", nullable=false)
     @JsonIgnore
     private User ownerUser;
 
@@ -58,12 +57,10 @@ public class Post {
     private Long[] comments;
 
     @ManyToMany(mappedBy = "requestedPosts")
-//    @JsonBackReference
     @JsonIgnore
     private List<User> interestedUsers;
 
     @ManyToMany(mappedBy = "reminderPosts")
-//    @JsonBackReference
     @JsonIgnore
     private List<User> confirmedUsers;
 }

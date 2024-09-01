@@ -44,6 +44,16 @@ public class PostController {
         return this.postService.getAllPosts();
     }
 
+    @GetMapping("getPostsOfUser")
+    public List<Post> getUserPosts(@RequestHeader("Authorization") String token) {
+        return postService.getUserPosts(token);
+    }
+
+    @GetMapping("getPostsByUsername/{username}")
+    public List<Post> getPostsByUsername(@PathVariable String username) {
+        return postService.getPostsByUsername(username);
+    }
+
     @GetMapping("getPost/{id}")
     public Post getPostById(@PathVariable Long id) {
         return this.postService.getPostById(id);

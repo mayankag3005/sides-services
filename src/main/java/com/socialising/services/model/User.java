@@ -27,10 +27,10 @@ import java.util.Random;
 public class User implements UserDetails {
 
     @Id
-    @Column(unique=true)
+    @Column(unique=true, nullable=false)
     private Long userId;
 
-    @Column(unique=true)
+    @Column(unique=true, nullable=false)
     private String username;
 
     private String password;
@@ -94,7 +94,6 @@ public class User implements UserDetails {
     private String[] tags;
 
     @OneToMany(mappedBy = "ownerUser")
-//    @JsonManagedReference
     @JsonIgnore
     private List<Post> posts;
 
@@ -105,7 +104,7 @@ public class User implements UserDetails {
             inverseJoinColumns = @JoinColumn(name = "interestedPosts_id")
 
     )
-//    @JsonManagedReference
+
     @JsonIgnore
     private List<Post> requestedPosts;
 
