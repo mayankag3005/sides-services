@@ -86,6 +86,28 @@ class TagServiceTest {
     }
 
     @Test
+    public void should_add_tag_when_not_already_exists_and_should_be_lowercase() {
+        // Given
+        String testTagNameWithCase = "SoccER";
+        Tag testTagWithCase = Tag.builder()
+                .tagId(10L)
+                .tag(testTagNameWithCase)
+                .build();
+
+        // Mock
+        when(tagRepository.findByTagName(testTagNameWithCase)).thenReturn(null);
+
+        // When
+        Tag responseTag = tagService.addTag(testTagWithCase);
+
+        // Then
+        assertNotNull(responseTag);
+        assertNotEquals(testTagNameWithCase, responseTag.getTag());
+        assertEquals("soccer", responseTag.getTag());
+        verify(tagRepository, times(1)).save(testTagWithCase);
+    }
+
+    @Test
     public void test_add_tag_with_exception() {
         // Mock
         when(tagRepository.findByTagName(testTagName)).thenReturn(null);
@@ -192,5 +214,25 @@ class TagServiceTest {
         // Then
         assertEquals(1, result);
         verify(tagRepository, times(1)).deleteTagByName(testTagName);
+    }
+
+    @Test
+    public void should_delete_tag_with_name_when_exists_with_case() {
+        // Given
+        String testTagNameWithCase = "SoccER";
+        Tag testTagWithCase = Tag.builder()
+                .tagId(10L)
+                .tag("soccer")
+                .build();
+
+        // Mock
+        when(tagRepository.findByTagName("soccer")).thenReturn(testTagWithCase);
+
+        // When
+        int result = tagService.deleteTagByName(testTagNameWithCase);
+
+        // Then
+        assertEquals(1, result);
+        verify(tagRepository, times(1)).deleteTagByName("soccer");
     }
 }

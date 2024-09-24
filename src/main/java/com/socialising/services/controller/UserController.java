@@ -111,6 +111,12 @@ public class UserController {
         return this.userDetailsService.searchUserByTag(tag);
     }
 
+    //Search User by Tag Keyword
+    @GetMapping("searchUsersByTagKey/{keyword}")
+    public List<User> searchUsersByTagContaining(@PathVariable String keyword) {
+        return this.userDetailsService.searchUsersByTagContaining(keyword);
+    }
+
     // To Send the Friend Request from User to User {toUsername}
     @PostMapping("sendFriendRequest/{username}")
     public String sendFriendRequest(@PathVariable("username") String toUsername, @RequestHeader("Authorization") String token) {

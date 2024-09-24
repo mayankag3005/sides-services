@@ -448,6 +448,7 @@ class UserServiceTest {
         String mockJwtToken = "Bearer mock.jwt.token";
 
         testUser.setPassword("password");
+        testUser.setTags(new String[]{"developer", "java"});
 
         User userToUpdate = new User();
         userToUpdate.setUsername(testUsername);
@@ -480,6 +481,8 @@ class UserServiceTest {
         assertEquals("NewFirstName", updatedUser.getFirstName());
         assertEquals("NewLastName", updatedUser.getLastName());
         assertEquals("HomeCity", updatedUser.getHomeCity());
+        assertEquals("password", updatedUser.getPassword());
+        assertEquals(2, updatedUser.getTags().length);
         verify(userRepository, times(1)).save(any());
     }
 
@@ -681,6 +684,80 @@ class UserServiceTest {
         // Then
         assertEquals(0, responseUsers.size());
         verify(userRepository, times(1)).findAll();
+    }
+
+    @Test
+    public void should_get_users_when_MatchingTag() {
+        // Given
+        testUser.setTags(new String[]{"developer", "java"});
+        secondTestUser.setTags(new String[]{"designer", "javascript"});
+
+        List<User> users = Arrays.asList(testUser, secondTestUser);
+
+        // Mock
+        when(userRepository.findAll()).thenReturn(users);
+
+        // When
+        List<User> result = userService.searchUsersByTagContaining("java");
+
+        // Then
+        assertEquals(2, result.size());
+        assertEquals(testUser, result.get(0));
+    }
+
+    @Test
+    public void should_not_get_users_when_not_MatchingTag() {
+        // Given
+        testUser.setTags(new String[]{"developer", "java"});
+        secondTestUser.setTags(new String[]{"designer", "javascript"});
+
+        List<User> users = Arrays.asList(testUser, secondTestUser);
+
+        // Mock
+        when(userRepository.findAll()).thenReturn(users);
+
+        // When
+        List<User> result = userService.searchUsersByTagContaining("python");
+
+        // Then
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void should_not_get_users_when_EmptyTag() {
+        // Given
+        testUser.setTags(new String[]{"developer", "java"});
+        secondTestUser.setTags(new String[]{"designer", "javascript"});
+
+        List<User> users = Arrays.asList(testUser, secondTestUser);
+
+        // Mock
+        when(userRepository.findAll()).thenReturn(users);
+
+        // When
+        List<User> result = userService.searchUsersByTagContaining("");
+
+        // Then
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testSearchUsersByTagContaining_NoTags() {
+        // Given
+        testUser.setTags(new String[]{"developer", "java"});
+        secondTestUser.setTags(null);
+
+        List<User> users = Arrays.asList(testUser, secondTestUser);
+
+        // Mock
+        when(userRepository.findAll()).thenReturn(users);
+
+        // When
+        List<User> result = userService.searchUsersByTagContaining("java");
+
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals(testUser, result.get(0));
     }
 
     // sendFriendRequest

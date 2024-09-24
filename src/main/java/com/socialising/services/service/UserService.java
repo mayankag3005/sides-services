@@ -23,10 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -342,6 +339,33 @@ public class UserService {
         }
 
         log.info("No. of users matching tag: {} are {}", tag, filteredUsers.size());
+        return filteredUsers;
+    }
+
+    // Search User by Tag Keyword
+    public List<User> searchUsersByTagContaining(String keyword) {
+        if(keyword.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // Convert the keyword to lowercase
+        String lowerCaseKeyword = keyword.toLowerCase();
+        List<User> allUsers = this.userRepository.findAll();
+        List<User> filteredUsers = new ArrayList<>();
+
+        for (User user : allUsers) {
+            if (user.getTags() != null) {
+                // Check if any tag contains the lowerCaseKeyword, also convert tags to lowercase
+                boolean matches = Arrays.stream(user.getTags())
+                        .map(String::toLowerCase) // Convert each tag to lowercase
+                        .anyMatch(tag -> tag.contains(lowerCaseKeyword));
+
+                if (matches) {
+                    filteredUsers.add(user);
+                }
+            }
+        }
+
+        log.info("No. of users matching tag containing '{}': {}", lowerCaseKeyword, filteredUsers.size());
         return filteredUsers;
     }
 

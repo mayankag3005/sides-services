@@ -24,8 +24,14 @@ public class TagService {
     // Add a tag to DB
     public Tag addTag(Tag tag) {
 
-        if (tagRepository.findByTagName(tag.getTag()) != null) {
-            log.info("Tag [{}] already exists in DB", tag.getTag());
+        // Convert the tag to lowercase
+        String lowerCaseTag = tag.getTag().toLowerCase();
+        // Update tag object with the lowercase version
+        tag.setTag(lowerCaseTag);
+
+
+        if (tagRepository.findByTagName(lowerCaseTag) != null) {
+            log.info("Tag [{}] already exists in DB", lowerCaseTag);
             return null;
         }
 
@@ -61,14 +67,18 @@ public class TagService {
 
     // DELETE Tag by tagName
     public int deleteTagByName(String tagName) {
-        if (tagRepository.findByTagName(tagName) != null) {
-            log.info("Tag [{}] exists in DB", tagName);
-            tagRepository.deleteTagByName(tagName);
-            log.info("Tag [{}] Deleted DB", tagName);
+        // Convert the tag name to lowercase
+        String lowerCaseTagName = tagName.toLowerCase();
+
+        if (tagRepository.findByTagName(lowerCaseTagName) != null) {
+            log.info("Tag [{}] exists in DB", lowerCaseTagName);
+            // Delete the tag
+            tagRepository.deleteTagByName(lowerCaseTagName);
+            log.info("Tag [{}] Deleted DB", lowerCaseTagName);
             return 1;
         }
         else {
-            log.info("No Tag exists with Name: [{}]", tagName);
+            log.info("No Tag exists with Name: [{}]", lowerCaseTagName);
             return -1;
         }
     }
