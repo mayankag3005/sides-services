@@ -724,7 +724,7 @@ class UserServiceTest {
     }
 
     @Test
-    public void should_not_get_users_when_EmptyTag() {
+    public void should_get_all_users_when_EmptyTag() {
         // Given
         testUser.setTags(new String[]{"developer", "java"});
         secondTestUser.setTags(new String[]{"designer", "javascript"});
@@ -738,7 +738,9 @@ class UserServiceTest {
         List<User> result = userService.searchUsersByTagContaining("");
 
         // Then
-        assertEquals(0, result.size());
+        assertEquals(2, result.size());
+        assertEquals(testUser, result.get(0));
+        assertEquals(secondTestUser, result.get(1));
     }
 
     @Test

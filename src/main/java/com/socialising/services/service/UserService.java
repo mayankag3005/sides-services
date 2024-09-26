@@ -323,6 +323,10 @@ public class UserService {
 
     // Search User by Word as Usernames
     public List<User> searchUserByWord(String word) {
+        // Returning all users for empty username search
+        if(word.isEmpty()) {
+            return this.userRepository.findAll();
+        }
 
         return this.userRepository.searchUserByWord(word);
     }
@@ -344,8 +348,9 @@ public class UserService {
 
     // Search User by Tag Keyword
     public List<User> searchUsersByTagContaining(String keyword) {
+        // Returning all users for empty tag search
         if(keyword.isEmpty()) {
-            return new ArrayList<>();
+            return this.userRepository.findAll();
         }
         // Convert the keyword to lowercase
         String lowerCaseKeyword = keyword.toLowerCase();
