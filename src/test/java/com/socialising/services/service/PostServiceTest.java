@@ -1,5 +1,7 @@
 package com.socialising.services.service;
 
+import com.socialising.services.dto.PostDTO;
+import com.socialising.services.mapper.PostMapper;
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.socialising.services.config.JwtService;
@@ -46,6 +48,9 @@ class PostServiceTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private PostMapper postMapper;
+
     @InjectMocks
     private PostService postService;
 
@@ -61,6 +66,7 @@ class PostServiceTest {
     private User ownerUser;
     private User otherUser;
     private User secondOtherUser;
+    private PostDTO testPostDTO;
 
 //    private MemoryAppender memoryAppender;
 
@@ -114,6 +120,16 @@ class PostServiceTest {
         ownerUsername = "ownerUser";
         otherUsername = "otherUser";
         secondOtherUsername = "secondOtherUser";
+
+        testPostDTO = PostDTO.builder()
+                .description("This is test post")
+                .postType("general")
+                .timeType("later")
+                .postStartTs("2024-07-13")
+                .postEndTs("2024-08-15")
+                .location("Amity")
+                .onlyForWomen(false)
+                .build();
 
         ownerUser = User.builder()
                 .userId(2L)
@@ -192,14 +208,14 @@ class PostServiceTest {
         when(userRepository.findByUsername(ownerUsername)).thenReturn(Optional.of(ownerUser));
 
         // Mock saving of post
-        when(postRepository.save(any())).thenReturn(testPost);
+        when(postRepository.save(any(Post.class))).thenReturn(testPost);
 
         // When
-        Post addedPost = postService.addPost(testPost, "Bearer " + mockJwtToken);
+        PostDTO addedPostDTO = postService.addPost(testPostDTO, "Bearer " + mockJwtToken);
 
         // Then
-        assertNotNull(addedPost);
-        assertEquals(testPost.getDescription(), addedPost.getDescription());
+        assertNotNull(addedPostDTO);
+        assertEquals(testPost.getDescription(), addedPostDTO.getDescription());
 
         // Verify interactions
         verify(jwtService, times(1)).extractUsername(anyString());
@@ -218,14 +234,37 @@ class PostServiceTest {
         when(jwtService.extractUsername(mockJwtToken.substring(7))).thenThrow(new BadCredentialsException("Invalid / Expired token"));
 
         // When
-        Post addedPost = postService.addPost(testPost, mockJwtToken);
+        Exception exception = assertThrows(BadCredentialsException.class, () -> {
+            postService.addPost(testPostDTO, mockJwtToken);
+        });
 
         // Then
-        assertNull(addedPost);
+        assertEquals("Invalid or expired token. Please provide a valid token.", exception.getMessage());
 
         // Verify interactions
         verify(jwtService, times(1)).extractUsername(mockJwtToken.substring(7));
         verify(userRepository, never()).findByUsername(ownerUsername);
+        verify(postRepository, never()).save(any());
+    }
+
+    @Test
+    public void should_not_add_post_when_user_not_found() {
+        // Mock JWT token
+        String mockJwtToken = "Bearer mock.jwt.token";
+
+        // Mock username extraction and user retrieval
+        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn("testUser");
+        when(userRepository.findByUsername("testUser")).thenReturn(Optional.empty());
+
+        // When
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            postService.addPost(testPostDTO, mockJwtToken);
+        });
+
+        // Then
+        assertEquals("User not found: testUser", exception.getMessage());
+        verify(jwtService, times(1)).extractUsername(mockJwtToken.substring(7));
+        verify(userRepository, times(1)).findByUsername("testUser");
         verify(postRepository, never()).save(any());
     }
 
@@ -241,10 +280,12 @@ class PostServiceTest {
         when(postRepository.save(any())).thenThrow(new RuntimeException("Database error"));
 
         // When
-        Post addedPost = postService.addPost(testPost, mockJwtToken);
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            postService.addPost(testPostDTO, mockJwtToken);
+        });
 
         // Then
-        assertNull(addedPost);
+        assertEquals("Unable to add post. Please try again later.", exception.getMessage());
 
         // Verify interactions
         verify(jwtService, times(1)).extractUsername(mockJwtToken.substring(7));

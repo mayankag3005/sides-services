@@ -1,5 +1,6 @@
 package com.socialising.services.controller;
 
+import com.socialising.services.dto.PostDTO;
 import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
 import com.socialising.services.service.PostService;
@@ -7,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,11 +34,12 @@ public class PostController {
     }
 
     @PostMapping("addPost")
-    public Post addPost(@RequestBody Post post, @RequestHeader("Authorization") String token) {
+    public ResponseEntity<PostDTO> addPost(@RequestBody PostDTO postDTO, @RequestHeader("Authorization") String token) {
         if (!checkTokenValidity(token)) {
-            return null;
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
-        return this.postService.addPost(post, token);
+        PostDTO createdPost = postService.addPost(postDTO, token);
+        return new ResponseEntity<>(createdPost, HttpStatus.CREATED);
     }
 
     @GetMapping("getAllPosts")

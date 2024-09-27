@@ -4,6 +4,9 @@ import com.socialising.services.config.JwtService;
 import com.socialising.services.constants.Role;
 import com.socialising.services.constants.Status;
 import com.socialising.services.controller.UserController;
+import com.socialising.services.dto.UserDTO;
+import com.socialising.services.exceptionHandler.UserNotFoundException;
+import com.socialising.services.mapper.UserMapper;
 import com.socialising.services.model.ChangePasswordRequest;
 import com.socialising.services.model.Image;
 import com.socialising.services.model.Post;
@@ -89,32 +92,41 @@ public class UserService {
     }
 
     // Add New User to DB
-    public User addUser(User user, String token) {
-        try {
-            String username = getUsernameFromToken(token);
-            User checkUser = userRepository.findByUsername(username).get();
-            if (!checkUser.getRole().equals(Role.ADMIN)) {
-                log.info("User can be added only by ADMIN. Please Register yourself!");
-                return null;
-            }
-        } catch (Exception e) {
-            log.info("Could not fetch Username from token, Please login again and raise it.");
-            return null;
-        }
 
-        Long userId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
-        user.setUserId(userId);
-        user.setStatus(Status.ONLINE);
-
-        try {
-            userRepository.save(user);
-            log.info("User added to the db");
-            return user;
-        } catch (Exception e) {
-            log.info(e.getMessage());
-            return null;
-        }
-    }
+    /**
+     * Adding User without Register is not required now
+     **/
+//    public UserDTO addUser(UserDTO userDto, String token) {
+//        try {
+//            String username = getUsernameFromToken(token);
+//            User checkUser = userRepository.findByUsername(username).orElse(null);
+//            if (checkUser == null || !checkUser.getRole().equals(Role.ADMIN)) {
+//                log.info("User can be added directly only by ADMIN. Please Register yourself!");
+//                return null;
+//            }
+//        } catch (Exception e) {
+//            log.info("Could not fetch Username from token, Please login again and raise it.");
+//            return null;
+//        }
+//
+//        // Get User from UserDTO
+//        User user = UserMapper.dtoToEntity(userDto);
+//
+//        // Have new user id
+//        Long userId = Long.valueOf(new DecimalFormat("000000").format(new Random().nextInt(999999)));
+//        // set the userid and user status
+//        user.setUserId(userId);
+//        user.setStatus(Status.ONLINE);
+//
+//        try {
+//            userRepository.save(user);
+//            log.info("User added to the db");
+//            return UserMapper.entityToDto(user);
+//        } catch (Exception e) {
+//            log.info(e.getMessage());
+//            return null;
+//        }
+//    }
 
     // Get all the users in DB
     public ArrayList<User> getAllUserDetails() {
@@ -174,68 +186,51 @@ public class UserService {
     // Update User Details
     // this method only updated general fields for the User
     // It does not update: userId, username, password, phoneNumber, role, tags and dp
-    public User updateUserDetailsExceptUsernamePasswordAndDP(User user, String token) {
-
-        String username = jwtService.extractUsername(token.substring(7));
-
-        if (!username.equals(user.getUsername()) && !user.getRole().equals(Role.ADMIN)) {
-            log.info("User [{}] is not Authorized to update the details for User [{}]", username, user.getUsername());
-            return null;
-        }
-
-        User authUser = userRepository.findByUsername(username).get();
-
-        authUser.setFirstName(user.getFirstName());
-        authUser.setLastName(user.getLastName());
-        authUser.setDob(user.getDob());
-        authUser.setAge(user.getAge());
-        authUser.setGender(user.getGender());
-        authUser.setReligion(user.getReligion());
-        authUser.setEducation(user.getEducation());
-        authUser.setOccupation(user.getOccupation());
-        authUser.setMaritalStatus(user.getMaritalStatus());
-        authUser.setCity(user.getCity());
-        authUser.setState(user.getState());
-        authUser.setHomeCity(user.getHomeCity());
-        authUser.setHomeState(user.getHomeState());
-        authUser.setCountry(user.getCountry());
-
-//        User updatedUser = User.builder()
-//                .userId(authUser.getUserId())
-//                .username(authUser.getUsername())
-//                .firstName(user.getFirstName())
-//                .lastName(user.getLastName())
-//                .email(user.getEmail())
-//                .phoneNumber(authUser.getPhoneNumber())
-//                .password(authUser.getPassword())
-//                .role(authUser.getRole())
-//                .dob(user.getDob())
-//                .age(user.getAge())
-//                .gender(user.getGender())
-//                .religion(user.getReligion())
-//                .education(user.getEducation())
-//                .occupation(user.getOccupation())
-//                .maritalStatus(user.getMaritalStatus())
-//                .city(user.getCity())
-//                .state(user.getState())
-//                .homeCity(user.getHomeCity())
-//                .homeState(user.getHomeState())
-//                .country(user.getCountry())
-//                .friendRequests(user.getFriendRequests() != null ? user.getFriendRequests() : new String[]{})
-//                .friends(user.getFriends() != null ? user.getFriends() : new String[]{})
-//                .tags(user.getTags() != null ? user.getTags() : new String[]{})
-//                .posts(user.getPosts() != null ? user.getPosts() : new ArrayList<>())
-//                .requestedPosts(user.getRequestedPosts() != null ? user.getRequestedPosts() : new ArrayList<>())
-//                .reminderPosts(user.getReminderPosts() != null ? user.getReminderPosts() : new ArrayList<>())
-//                .build();
-
+    public UserDTO updateUserDetailsExceptUsernamePasswordAndDP(UserDTO userDto, String token) {
         try {
+            // Extract Username from token
+            String username = jwtService.extractUsername(token.substring(7));
+            // Fetch the authenticated User
+            User authUser = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
+
+    //        if (authUser == null || (!username.equals(user.getUsername()) && !user.getRole().equals(Role.ADMIN))) {
+    //            log.info("User [{}] is not Authorized to update the details for User [{}]", username, user.getUsername());
+    //            return null;
+    //        }
+
+            // Check if user exists in DB
+            if (authUser == null) {
+                log.info("User does not exist, [{}]", username);
+                return null;
+            }
+
+            // Map fields from DTO to Entity
+            authUser.setFirstName(userDto.getFirstName());
+            authUser.setLastName(userDto.getLastName());
+            authUser.setDob(userDto.getDob());
+            authUser.setAge(userDto.getAge());
+            authUser.setGender(userDto.getGender());
+            authUser.setReligion(userDto.getReligion());
+            authUser.setEducation(userDto.getEducation());
+            authUser.setOccupation(userDto.getOccupation());
+            authUser.setMaritalStatus(userDto.getMaritalStatus());
+            authUser.setCity(userDto.getCity());
+            authUser.setState(userDto.getState());
+            authUser.setHomeCity(userDto.getHomeCity());
+            authUser.setHomeState(userDto.getHomeState());
+            authUser.setCountry(userDto.getCountry());
+
+            // Save updated user
             userRepository.save(authUser);
-            log.info("User Details updated in the DB");
-            return authUser;
-        } catch (Exception e) {
-            log.info(e.getMessage());
-            return user;
+            log.info("User details updated successfully in the database");
+            return UserMapper.entityToDto(authUser);
+        } catch (UserNotFoundException e) {
+            log.error("User Not Found Error: {}", e.getMessage());
+            throw e;
+        } catch ( Exception e) {
+            log.error("Unexpected Error Occurred: {}", e.getMessage());
+            throw new RuntimeException("An unexpected error occurred while updating user details.");
         }
     }
 

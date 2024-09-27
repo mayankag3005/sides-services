@@ -2,6 +2,8 @@ package com.socialising.services.service;
 
 import com.socialising.services.config.JwtService;
 import com.socialising.services.constants.Role;
+import com.socialising.services.dto.PostDTO;
+import com.socialising.services.mapper.PostMapper;
 import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
 import com.socialising.services.repository.ImageRepository;
@@ -73,52 +75,86 @@ public class PostService {
     private boolean checkUserOwnerOfPostAndRole(String token, String ownerUsername) {
         String username = jwtService.extractUsername(token.substring(7));
         Role userRole = userRepository.findByUsername(username).get().getRole();
-        if (username.equals(ownerUsername) || userRole.equals(Role.ADMIN)) {
-            return true;
-        }
-        return false;
+        return username.equals(ownerUsername) || userRole.equals(Role.ADMIN);
     }
 
     // Add a Post to DB
-    public Post addPost(Post newPost, String token) {
+    public PostDTO addPost(PostDTO newPostDTO, String token) {
 
-        String username = "";
         try {
-            log.info("Token: {}", token);
-            username = jwtService.extractUsername(token.substring(7));
+            String username = jwtService.extractUsername(token.substring(7));
             log.info("Username: {}", username);
-        } catch (BadCredentialsException e) {
-            log.info("Invalid / Expired token");
-            log.info("No Post added to DB");
-            return null;
-        }
 
+            // Get the user by username or throw an exception
+            User ownerUser = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
 
-        Long postId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
-        var post = Post.builder()
-                .postId(postId)
-                .ownerUser(userRepository.findByUsername(username).orElseThrow())
-                .description(newPost.getDescription())
-                .postType(newPost.getPostType())
-                .timeType(newPost.getTimeType())
-                .postStartTs(newPost.getPostStartTs())
-                .postEndTs(newPost.getPostEndTs())
-                .location(newPost.getLocation())
-                .onlyForWomen(newPost.getOnlyForWomen())
-                .tags(newPost.getTags())
-                .createdTs(Timestamp.valueOf(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date())))
-                .confirmedUsers(new ArrayList<>())
-                .interestedUsers(new ArrayList<>())
-                .build();
+            // Generate a unique Post ID
+            Long postId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
 
-        try {
-            this.postRepository.save(post);
+            // Convert the PostDTO to Post Entity using Mapper
+            Post post = PostMapper.dtoToEntity(newPostDTO);
+            post.setPostId(postId);
+            post.setOwnerUser(ownerUser);
+            post.setCreatedTs(Timestamp.valueOf(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date())));
+            post.setConfirmedUsers(new ArrayList<>());
+            post.setInterestedUsers(new ArrayList<>());
+
+            // Save the post to the repository
+            postRepository.save(post);
             log.info("Post added to db");
-            return post;
+
+            // Return the saved Post entity converted back to DTO
+            return PostMapper.entityToDto(post);
+        } catch (BadCredentialsException e) {
+            log.error("Invalid / Expired token. No Post added to DB");
+            throw new BadCredentialsException("Invalid or expired token. Please provide a valid token.");
+        } catch (IllegalArgumentException e) {
+            log.error("User not found or other input error: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
-            log.info(e.getMessage());
-            return null;
+            log.error("Unexpected error while adding the post: {}", e.getMessage());
+            throw new RuntimeException("Unable to add post. Please try again later.");
         }
+
+
+//        String username = "";
+//        try {
+//            log.info("Token: {}", token);
+//            username = jwtService.extractUsername(token.substring(7));
+//            log.info("Username: {}", username);
+//        } catch (BadCredentialsException e) {
+//            log.info("Invalid / Expired token");
+//            log.info("No Post added to DB");
+//            return null;
+//        }
+//
+//
+//        Long postId = Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999)));
+//        var post = Post.builder()
+//                .postId(postId)
+//                .ownerUser(userRepository.findByUsername(username).orElseThrow())
+//                .description(newPost.getDescription())
+//                .postType(newPost.getPostType())
+//                .timeType(newPost.getTimeType())
+//                .postStartTs(newPost.getPostStartTs())
+//                .postEndTs(newPost.getPostEndTs())
+//                .location(newPost.getLocation())
+//                .onlyForWomen(newPost.getOnlyForWomen())
+//                .tags(newPost.getTags())
+//                .createdTs(Timestamp.valueOf(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date())))
+//                .confirmedUsers(new ArrayList<>())
+//                .interestedUsers(new ArrayList<>())
+//                .build();
+//
+//        try {
+//            this.postRepository.save(post);
+//            log.info("Post added to db");
+//            return post;
+//        } catch (Exception e) {
+//            log.info(e.getMessage());
+//            return null;
+//        }
 
     }
 

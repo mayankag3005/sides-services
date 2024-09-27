@@ -1,6 +1,7 @@
 package com.socialising.services.controller;
 
 import com.fasterxml.jackson.databind.util.JSONPObject;
+import com.socialising.services.dto.UserDTO;
 import com.socialising.services.model.ChangePasswordRequest;
 import com.socialising.services.model.Image;
 import com.socialising.services.model.Post;
@@ -40,12 +41,13 @@ public class UserController {
         return true;
     }
 
+    /** Adding User without Register is not required now **/
     // Add a User manually (Done by ADMIN only)
-    @PostMapping("addUser")
-    @PreAuthorize("hasAuthority('admin:create')")
-    public User addUser(@RequestBody User user, @RequestHeader("Authorization") String token) {
-        return this.userDetailsService.addUser(user, token);
-    }
+//    @PostMapping("addUser")
+//    @PreAuthorize("hasAuthority('admin:create')")
+//    public User addUser(@RequestBody UserDTO userDto, @RequestHeader("Authorization") String token) {
+//        return this.userDetailsService.addUser(userDto, token);
+//    }
 
     // Get All the Users
     @GetMapping("getAllUserDetails")
@@ -85,11 +87,11 @@ public class UserController {
 
      // Update user details
     @PatchMapping("updateUserDetails")
-    public User updateUserDetails(@RequestBody User user, @RequestHeader("Authorization") String token) {
+    public UserDTO updateUserDetails(@RequestBody UserDTO userDto, @RequestHeader("Authorization") String token) {
         if (!checkTokenValidity(token)) {
             return null;
         }
-        return this.userDetailsService.updateUserDetailsExceptUsernamePasswordAndDP(user, token);
+        return this.userDetailsService.updateUserDetailsExceptUsernamePasswordAndDP(userDto, token);
     }
 
     // DELETE User by ID
@@ -248,15 +250,15 @@ public class UserController {
         return this.userDetailsService.removeUserDP(token);
     }
 
-    // CHAT based APIs
-    @MessageMapping("/user.addUser")
-    @SendTo("/user/public")
-    public User connectUser(@Payload User user, @RequestHeader("Authorization") String token) {
-        if (!checkTokenValidity(token)) {
-            return null;
-        }
-        return this.userDetailsService.addUser(user, token);
-    }
+/***    CHAT based APIs  ***/
+//    @MessageMapping("/user.addUser")
+//    @SendTo("/user/public")
+//    public User connectUser(@Payload User user, @RequestHeader("Authorization") String token) {
+//        if (!checkTokenValidity(token)) {
+//            return null;
+//        }
+//        return this.userDetailsService.addUser(user, token);
+//    }
 
     // All the users subscribed to /user/public will get to know that the user has disconnected
     @MessageMapping("/user.disconnectUser")
