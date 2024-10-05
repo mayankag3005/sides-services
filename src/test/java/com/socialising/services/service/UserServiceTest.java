@@ -959,7 +959,7 @@ class UserServiceTest {
         verify(userRepository, times(1)).save(testUser);
     }
 
-    // deleteFriendRequest
+    // rejectFriendRequest
     /** TEST_USER is FROM_USER
      * SECOND_TEST_USER is TO_USER
      * TEST_USER is sending Friend Request to TO_USER
@@ -975,7 +975,7 @@ class UserServiceTest {
         when(userRepository.findByUsername(secondTestUsername)).thenReturn(Optional.of(secondTestUser));
 
         // When
-        String result = userService.deleteFriendRequest(testUsername, mockJwtToken);
+        String result = userService.rejectFriendRequest(testUsername, mockJwtToken);
 
         // Then
         assertEquals("Friend Request NOT Sent", result);
@@ -995,7 +995,7 @@ class UserServiceTest {
         when(userRepository.save(secondTestUser)).thenReturn(secondTestUser);
 
         // When
-        String result = userService.deleteFriendRequest(testUsername, mockJwtToken);
+        String result = userService.rejectFriendRequest(testUsername, mockJwtToken);
 
         // Then
         assertEquals("Friend request Deleted", result);
@@ -1020,7 +1020,7 @@ class UserServiceTest {
         when(userRepository.save(secondTestUser)).thenReturn(secondTestUser);
 
         // When
-        String result = userService.deleteFriendRequest(testUsername, mockJwtToken);
+        String result = userService.rejectFriendRequest(testUsername, mockJwtToken);
 
         // Then
         assertEquals("Friend request Deleted", result);
@@ -1031,6 +1031,80 @@ class UserServiceTest {
         verify(userRepository, times(1)).save(secondTestUser);
         verify(userRepository, times(1)).save(testUser);
     }
+
+    // deleteFriendRequest
+    /** TEST_USER is FROM_USER
+     * SECOND_TEST_USER is TO_USER
+     * TEST_USER is sending Friend Request to TO_USER
+     */
+
+    @Test
+    public void should_not_delete_friend_request_when_friend_request_not_sent() {
+        // Arrange
+        String mockJwtToken = "Bearer mock.jwt.token";
+        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
+        when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsername(secondTestUsername)).thenReturn(Optional.of(secondTestUser));
+
+        // Act
+        String result = userService.deleteFriendRequest(secondTestUsername, mockJwtToken);
+
+        // Assert
+        assertEquals("Friend Request NOT Sent", result);
+        assertNull(testUser.getFriendsRequested());
+        assertNull(secondTestUser.getFriendRequests());
+        verify(userRepository, never()).save(any(User.class)); // Verify no save operation was performed
+    }
+
+    @Test
+    public void should_delete_friend_request_when_friend_request_sent_and_to_user_does_not_exist_anymore() {
+        // Arrange
+        String mockJwtToken = "Bearer mock.jwt.token";
+        testUser.setFriendsRequested(new String[]{secondTestUsername});
+
+        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
+        when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsername(secondTestUsername)).thenReturn(Optional.empty());
+        when(userRepository.save(testUser)).thenReturn(testUser);
+
+        // Act
+        String result = userService.deleteFriendRequest(secondTestUsername, mockJwtToken);
+
+        // Assert
+        assertEquals("Friend request Deleted", result);
+        assertEquals(0, testUser.getFriendsRequested().length);
+        assertFalse(ArrayUtils.contains(testUser.getFriendsRequested(), secondTestUsername));
+        verify(userRepository, times(1)).save(testUser);
+        verify(userRepository, never()).save(secondTestUser);
+    }
+
+    @Test
+    public void should_delete_friend_request_when_friend_request_sent_and_to_user_also_exist() {
+        // Arrange
+        String mockJwtToken = "Bearer mock.jwt.token";
+        testUser.setFriendsRequested(new String[]{secondTestUsername});
+        secondTestUser.setFriendRequests(new String[]{testUsername});
+
+        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(testUsername);
+        when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsername(secondTestUsername)).thenReturn(Optional.of(secondTestUser));
+        when(userRepository.save(testUser)).thenReturn(testUser);
+        when(userRepository.save(secondTestUser)).thenReturn(secondTestUser);
+
+        // Act
+        String result = userService.deleteFriendRequest(secondTestUsername, mockJwtToken);
+
+        // Assert
+        assertEquals("Friend request Deleted", result);
+        assertEquals(0, testUser.getFriendsRequested().length);
+        assertEquals(0, secondTestUser.getFriendRequests().length);
+        assertFalse(ArrayUtils.contains(testUser.getFriendsRequested(), secondTestUsername));
+        assertFalse(ArrayUtils.contains(secondTestUser.getFriendRequests(), testUsername));
+        verify(userRepository, times(1)).save(secondTestUser);
+        verify(userRepository, times(1)).save(testUser);
+    }
+
+
 
     // getFriendRequestUsers
 

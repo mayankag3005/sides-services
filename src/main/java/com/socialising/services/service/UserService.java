@@ -488,9 +488,9 @@ public class UserService {
         return "Friend request accepted";
     }
 
-    // To Remove/Delete the Friend Request from User {userRequestId} to User {userid}
+    // To Reject the Friend Request from User {fromUsername}
     /** toUser is the current user **/
-    public String deleteFriendRequest(String fromUsername, String token) {
+    public String rejectFriendRequest(String fromUsername, String token) {
 
         // Get the toUser who has to reject the friend Request
         String toUsername = getUsernameFromToken(token);
@@ -528,6 +528,46 @@ public class UserService {
         return "Friend request Deleted";
     }
 
+    // To Delete the Friend Request sent to User {toUsername}
+    /** fromUser is the current user **/
+    public String deleteFriendRequest(String toUsername, String token) {
+
+        // Get the fromUser who has to delete the friend Request
+        String fromUsername = getUsernameFromToken(token);
+        User fromUser = userRepository.findByUsername(fromUsername).get();
+
+        // Get the friends Requested list of FROM_USER
+        String[] friendsRequestedByFromUser = fromUser.getFriendsRequested();
+
+        // Check if TO_USER has received the request from FROM_USER
+        if(!ArrayUtils.contains(friendsRequestedByFromUser, toUsername)) {
+            log.info("Friend Request is NOT Sent from User [{}] to User [{}]", fromUsername, toUsername);
+            return "Friend Request NOT Sent";
+        }
+
+        // Remove the TO_USER from the friends requested list of the FROM_USER
+        friendsRequestedByFromUser = ArrayUtils.removeElement(friendsRequestedByFromUser, toUsername);
+        fromUser.setFriendsRequested(friendsRequestedByFromUser);
+        userRepository.save(fromUser);
+
+        if (checkUserExistInDBWithUsername(toUsername)) {
+            // Get the TO_USER whose friends request is deleted
+            User toUser = userRepository.findByUsername(toUsername).get();
+
+            // Get the friend Requests list of TO_USER
+            String[] friendRequestsOfToUser = toUser.getFriendRequests();
+
+            // Remove the TO_USER from the friends requested list of the FROM_USER
+            friendRequestsOfToUser = ArrayUtils.removeElement(friendRequestsOfToUser, fromUsername);
+            toUser.setFriendRequests(friendRequestsOfToUser);
+
+            userRepository.save(toUser);
+        }
+
+        log.info("User [{}] deleted User [{}'s] from its Friends Requested list: [{}]", fromUsername, toUsername, fromUser.getFriendsRequested());
+        return "Friend request Deleted";
+    }
+
     // Get all the Friend Requests of the USER
     public String[] getFriendRequestUsers(String token) {
 
@@ -535,28 +575,6 @@ public class UserService {
         User user = userRepository.findByUsername(username).get();
         log.info("Friend Requests for User [{}] are: {}", username, user.getFriendRequests());
         return user.getFriendRequests() != null ? user.getFriendRequests() : new String[]{};
-
-//        if(ArrayUtils.isNotEmpty(user.getFriendRequests())) {
-//            Long[] friendRequests = user.getFriendRequests();
-//            ArrayList<User> userDetails = new ArrayList<>();
-//            for(Long userReqId : friendRequests) {
-//                if(this.userRepository.findById(userReqId).isEmpty()) {
-//                    log.info("User {} does not exist in DB", userReqId);
-//                    friendRequests = ArrayUtils.removeElement(friendRequests, userReqId);
-//                    log.info("User {} removed from User {}'s friends list", userReqId, userid);
-//                }
-//                else {
-//                    userDetails.add(this.userRepository.findById(userReqId).get());
-//                }
-//            }
-//            user.setFriendRequests(friendRequests);
-//            log.info("User {} has {} friend Requests: {}", userid, user.getFriendRequests().length, friendRequests);
-//            return userDetails;
-//        }
-//        else {
-//            log.info("User {} has no friend requests!!", userid);
-//            return new ArrayList<>();
-//        }
     }
 
     // GET all the Friends Requested of User
@@ -574,28 +592,6 @@ public class UserService {
         User user = userRepository.findByUsername(username).get();
         log.info("Friends for User [{}] are: {}", username, user.getFriends());
         return user.getFriends() != null ? user.getFriends() :  new String[]{};
-
-//        if(ArrayUtils.isNotEmpty(user.getFriends())) {
-//            Long[] friends = user.getFriends();
-//            ArrayList<User> friendDetails = new ArrayList<>();
-//            for(Long friendid : friends) {
-//                if(this.userRepository.findById(friendid).isEmpty()) {
-//                    log.info("Friend User {} does not exist in DB", friendid);
-//                    friends = ArrayUtils.removeElement(friends, friendid);
-//                    log.info("friend User {} removed from user {} friends list", friendid, userid);
-//                }
-//                else {
-//                    friendDetails.add(this.userRepository.findById(friendid).get());
-//                }
-//            }
-//            user.setFriends(friends);
-//            log.info("User {} has {} friends: {}", userid, user.getFriends().length, user.getFriends());
-//            return friendDetails;
-//        }
-//        else {
-//            log.info("User {} has not friends!!", userid);
-//            return null;
-//        }
     }
 
     // DELETE a Friend (friendID) from User (User Id)

@@ -137,13 +137,22 @@ public class UserController {
         return this.userDetailsService.acceptFriendRequest(fromUsername, token);
     }
 
-    // To Remove/Delete the Friend Request from User {userRequestId} to User {userid}
-    @DeleteMapping("deleteFriendRequest/{friendRequestUsername}")
-    public String deleteFriendRequest(@PathVariable("friendRequestUsername") String fromUsername, @RequestHeader("Authorization") String token) {
+    // To Reject the Friend Request from User {fromUsername}
+    @DeleteMapping("rejectFriendRequest/{friendRequestUsername}")
+    public String rejectFriendRequest(@PathVariable("friendRequestUsername") String fromUsername, @RequestHeader("Authorization") String token) {
         if (!checkTokenValidity(token)) {
             return "Token invalid";
         }
-        return this.userDetailsService.deleteFriendRequest(fromUsername, token);
+        return this.userDetailsService.rejectFriendRequest(fromUsername, token);
+    }
+
+    // To Delete the Friend Request sent to User {toUsername}
+    @DeleteMapping("deleteFriendRequest/{toUsername}")
+    public String deleteFriendRequest(@PathVariable("toUsername") String toUsername, @RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return "Token invalid";
+        }
+        return this.userDetailsService.deleteFriendRequest(toUsername, token);
     }
 
     @GetMapping("getFriendRequestUsers")
