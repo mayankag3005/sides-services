@@ -3,6 +3,9 @@ package com.socialising.services.service;
 import com.socialising.services.config.JwtService;
 import com.socialising.services.constants.Role;
 import com.socialising.services.controller.PostController;
+import com.socialising.services.dto.CommentDTO;
+import com.socialising.services.dto.CommentResponseDTO;
+import com.socialising.services.mapper.CommentMapper;
 import com.socialising.services.model.Comment;
 import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
@@ -64,7 +67,8 @@ public class CommentService {
     }
 
     // Add Comment on Post to DB
-    public Comment addCommentOnPost(Long postId, Comment newComment, String token) {
+    public CommentResponseDTO addCommentOnPost(Long postId, CommentDTO commentDTO, String token) {
+        // check if post exists
         if(!checkPostExistInDB(postId)) {
             return null;
         }
@@ -77,9 +81,8 @@ public class CommentService {
             return null;
         }
 
-        User user = userRepository.findByUsername(username).get();
-
         try {
+            Comment newComment = CommentMapper.dtoToEntity(commentDTO);
             // Set a unique comment id
             newComment.setCommentId(Long.valueOf(new DecimalFormat("00000000").format(new Random().nextInt(99999999))));
 
@@ -106,17 +109,17 @@ public class CommentService {
             postRepository.save(post);
 
             log.info("New Comment [{}] has been added to Comments DB", newComment.getDescription());
-            return newComment;
+            return CommentMapper.entityToDto(newComment);
 
         } catch (Exception e) {
-            log.info("Comment [{}] could not be added. Please try again!!", newComment.getDescription());
+            log.info("Comment [{}] could not be added. Please try again!!", commentDTO.getDescription());
             log.info("Error Occurred: [{}]", e.getMessage());
             return null;
         }
     }
 
     // GET All Comments on Post
-    public ArrayList<Comment> getAllCommentsOnPost(Long postId) {
+    public ArrayList<CommentResponseDTO> getAllCommentsOnPost(Long postId) {
         // Check if Post exists in DB
         if(!checkPostExistInDB(postId)) {
             return null;
@@ -134,11 +137,11 @@ public class CommentService {
         log.info("No. of Comments added to the Post [{}] are: [{}]", postId, commentIds.length);
 
         // Get the comments from comment DB by looping over comment IDs
-        ArrayList<Comment> comments = new ArrayList<>();
+        ArrayList<CommentResponseDTO> comments = new ArrayList<>();
 
         // Loop over the Comment list and Get the Comment Object for each Comment Id
         for(Long commentId : commentIds) {
-            comments.add(commentRepository.findById(commentId).get());
+            comments.add(CommentMapper.entityToDto(commentRepository.findById(commentId).get()));
         }
 
         // Return the list of Comment Objects of Post

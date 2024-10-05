@@ -1,5 +1,7 @@
 package com.socialising.services.controller;
 
+import com.socialising.services.dto.CommentDTO;
+import com.socialising.services.dto.CommentResponseDTO;
 import com.socialising.services.model.Comment;
 import com.socialising.services.service.CommentService;
 import org.slf4j.Logger;
@@ -23,12 +25,12 @@ public class CommentController {
     }
 
     @PostMapping("addCommentOnPost/{postId}")
-    public Comment addCommentOnPost(@PathVariable("postId") Long postId, @RequestBody Comment newComment, @RequestHeader("Authorization") String token) {
-        return commentService.addCommentOnPost(postId, newComment, token);
+    public CommentResponseDTO addCommentOnPost(@PathVariable("postId") Long postId, @RequestBody CommentDTO commentDTO, @RequestHeader("Authorization") String token) {
+        return commentService.addCommentOnPost(postId, commentDTO, token);
     }
 
     @GetMapping("getAllCommentsOnPost/{postId}")
-    public ArrayList<Comment> getAllCommentsOnPost(@PathVariable("postId") Long postId) {
+    public ArrayList<CommentResponseDTO> getAllCommentsOnPost(@PathVariable("postId") Long postId) {
         return this.commentService.getAllCommentsOnPost(postId);
     }
 
