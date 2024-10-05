@@ -21,7 +21,7 @@ public class Comment {
     @Column(unique=true)
     private Long commentId;
 
-    private Long userId;
+    private String username;
 
     private Long postId;
 

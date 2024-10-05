@@ -86,8 +86,8 @@ public class CommentService {
             // Set Post ID
             newComment.setPostId(postId);
 
-            // Set the comment Owner User Id
-            newComment.setUserId(user.getUserId());
+            // Set the comment Owner Username
+            newComment.setUsername(username);
 
             // Add New comment to Comment DB
             commentRepository.save(newComment);
@@ -180,7 +180,7 @@ public class CommentService {
             User user = userRepository.findByUsername(username).get();
 
             // Only the Owner of Comment and ADMIN User can delete a comment
-            if (!user.getUserId().equals(comment.getUserId()) && !user.getRole().equals(Role.ADMIN)) {
+            if (!username.equals(comment.getUsername()) && !user.getRole().equals(Role.ADMIN)) {
                 log.info("User [{}] is not authorized to Delete the comment [{}]", username, commentId);
                 return -1;
             }

@@ -95,14 +95,14 @@ class CommentServiceTest {
         testComment = Comment.builder()
                 .commentId(testCommentId)
                 .description("This is a test comment")
-                .userId(testUserId)
+                .username(testUsername)
                 .postId(testPostId)
                 .build();
 
         secondTestComment = Comment.builder()
                 .commentId(secondTestCommentId)
                 .description("This is second test comment")
-                .userId(testUserId)
+                .username(secondTestUsername)
                 .postId(testPostId)
                 .build();
     }
@@ -163,7 +163,7 @@ class CommentServiceTest {
         assertNotNull(responseComment);
         assertEquals("This is a test comment", responseComment.getDescription());
         assertEquals(testPostId, responseComment.getPostId());
-        assertEquals(testUserId, responseComment.getUserId());
+        assertEquals(testUsername, responseComment.getUsername());
         verify(postRepository, times(1)).save(any(Post.class));
         verify(commentRepository, times(1)).save(any(Comment.class));
     }
