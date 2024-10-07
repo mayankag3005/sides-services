@@ -8,6 +8,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class CommentResponseDTO {
+    private Long commentId;
+
     private String username;
 
     private String description;

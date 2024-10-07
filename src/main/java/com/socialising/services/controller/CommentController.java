@@ -49,7 +49,7 @@ public class CommentController {
         return this.commentService.getAllLikesOnComment(commentId);
     }
 
-    @DeleteMapping("removeAlikeOnComment/{commentId}/{userId}")
+    @DeleteMapping("removeAlikeOnComment/{commentId}")
     public int removeAlikeOnPost(@PathVariable("commentId") Long commentId, @RequestHeader("Authorization") String token) {
         return this.commentService.removeAlikeOnPost(commentId, token);
     }

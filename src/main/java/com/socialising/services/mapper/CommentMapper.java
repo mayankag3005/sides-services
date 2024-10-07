@@ -13,6 +13,7 @@ public class CommentMapper {
         }
 
         CommentResponseDTO commentResponseDTO = new CommentResponseDTO();
+        commentResponseDTO.setCommentId(comment.getCommentId());
         commentResponseDTO.setDescription(comment.getDescription());
         commentResponseDTO.setUsername(comment.getUsername());
         commentResponseDTO.setCommentLikes(comment.getCommentLikes());

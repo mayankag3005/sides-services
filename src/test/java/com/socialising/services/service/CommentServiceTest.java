@@ -107,11 +107,13 @@ class CommentServiceTest {
                 .build();
 
         testCommentResponseDTO = CommentResponseDTO.builder()
+                .commentId(testCommentId)
                 .description("This is a test comment")
                 .username(testUsername)
                 .build();
 
         secondTestCommentResponseDTO = CommentResponseDTO.builder()
+                .commentId(secondTestCommentId)
                 .description("This is second test comment")
                 .username(secondTestUsername)
                 .build();
