@@ -3,11 +3,16 @@ package com.socialising.services.service;
 import com.socialising.services.config.JwtService;
 import com.socialising.services.constants.Role;
 import com.socialising.services.dto.PostDTO;
+import com.socialising.services.exceptionHandler.InvalidDataException;
+import com.socialising.services.exceptionHandler.PostUpdateException;
+import com.socialising.services.exceptionHandler.TagNotFoundException;
 import com.socialising.services.mapper.PostMapper;
 import com.socialising.services.model.Post;
+import com.socialising.services.model.Tag;
 import com.socialising.services.model.User;
 import com.socialising.services.repository.ImageRepository;
 import com.socialising.services.repository.PostRepository;
+import com.socialising.services.repository.TagRepository;
 import com.socialising.services.repository.UserRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.RequiredArgsConstructor;
@@ -16,12 +21,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -36,7 +41,7 @@ public class PostService {
 
     private final UserRepository userRepository;
 
-    private final ImageRepository imageRepository;
+    private final TagRepository tagRepository;
 
     private final JwtService jwtService;
 
@@ -180,6 +185,62 @@ public class PostService {
     public Post getPostById(Long id) {
 
         return checkPostExistInDB(id) ? this.postRepository.findById(id).get() : null;
+    }
+
+    private String[] getTagEntities(String[] tags) {
+        return Arrays.stream(tags)
+                .map(tagName -> {
+                    Tag tag = tagRepository.findByTagName(tagName);
+                    if (tag == null) {
+                        throw new TagNotFoundException("Tag not found: " + tagName);
+                    }
+                    return tag.getTag();
+                })
+                .toArray(String[]::new);
+    }
+
+
+    // Update Post
+    public PostDTO updatePost(Long postId, String token, PostDTO postDTO) {
+        try {
+            if (checkPostExistInDB(postId)) {
+                Post post = postRepository.findById(postId).get();
+
+                String username = jwtService.extractUsername(token.substring(7));
+
+                // Check if the user updating the details is owner of post
+                if (!post.getOwnerUser().getUsername().equals(username)) {
+                    log.info("Only Owner of the Post can update its details.");
+                    return null;
+                }
+
+                // Update fields in the post entity
+                if (postDTO.getDescription() != null) post.setDescription(postDTO.getDescription());
+                if (postDTO.getPostType() != null) post.setPostType(postDTO.getPostType());
+                if (postDTO.getTimeType() != null) post.setTimeType(postDTO.getTimeType());
+                if (postDTO.getPostStartTs() != null) post.setPostStartTs(postDTO.getPostStartTs());
+                if (postDTO.getPostEndTs() != null) post.setPostEndTs(postDTO.getPostEndTs());
+                if (postDTO.getLocation() != null) post.setLocation(postDTO.getLocation());
+                post.setOnlyForWomen(postDTO.isOnlyForWomen() ? 'Y' : 'N');
+
+                if (postDTO.getTags() != null && postDTO.getTags().length > 0) {
+                    post.setTags(getTagEntities(postDTO.getTags()));
+                }
+
+                // Save the updated post
+                Post updatedPost = postRepository.save(post);
+                log.info("Successfully updated Post with ID: [{}]", postId);
+                return PostMapper.entityToDto(updatedPost);
+            } else {
+                return null;
+            }
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid argument provided: {}", e.getMessage());
+            throw new InvalidDataException("Invalid data provided", e);
+        } catch (Exception e) {
+            log.error("Error occurred while updating post with ID [{}]: {}", postId, e.getMessage());
+            throw new PostUpdateException("Error updating post with ID: " + postId, e);
+        }
     }
 
     // DELETE Post by ID

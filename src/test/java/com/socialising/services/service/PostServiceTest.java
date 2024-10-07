@@ -1,7 +1,10 @@
 package com.socialising.services.service;
 
 import com.socialising.services.dto.PostDTO;
+import com.socialising.services.exceptionHandler.PostUpdateException;
 import com.socialising.services.mapper.PostMapper;
+import com.socialising.services.model.Tag;
+import com.socialising.services.repository.TagRepository;
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.socialising.services.config.JwtService;
@@ -43,7 +46,7 @@ class PostServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private ImageRepository imageRepository;
+    private TagRepository tagRepository;
 
     @Mock
     private JwtService jwtService;
@@ -67,6 +70,8 @@ class PostServiceTest {
     private User otherUser;
     private User secondOtherUser;
     private PostDTO testPostDTO;
+    private PostDTO testUpdatePostDTO;
+    private Tag tag;
 
 //    private MemoryAppender memoryAppender;
 
@@ -121,6 +126,11 @@ class PostServiceTest {
         otherUsername = "otherUser";
         secondOtherUsername = "secondOtherUser";
 
+        tag = Tag.builder()
+                .tag("Tech")
+                .tagId(22L)
+                .build();
+
         testPostDTO = PostDTO.builder()
                 .description("This is test post")
                 .postType("general")
@@ -129,6 +139,17 @@ class PostServiceTest {
                 .postEndTs("2024-08-15")
                 .location("Amity")
                 .onlyForWomen(false)
+                .build();
+
+        testUpdatePostDTO = PostDTO.builder()
+                .description("New Description")
+                .postType("private")
+                .timeType("later")
+                .postStartTs("2024-07-13")
+                .postEndTs("2024-08-15")
+                .location("Agra")
+                .onlyForWomen(true)
+                .tags(new String[]{"Tech"})
                 .build();
 
         ownerUser = User.builder()
@@ -366,6 +387,85 @@ class PostServiceTest {
         assertEquals(postId, responsePost.getPostId());
         verify(postRepository, times(2)).findById(postId);
     }
+
+    // update Post
+    @Test
+    public void should_not_update_post_when_post_does_not_exist() {
+        // Mock JWT token
+        String mockJwtToken = "Bearer mock.jwt.token";
+
+        // Mock
+        when(postRepository.findById(100L)).thenReturn(Optional.empty());
+
+        // When
+        PostDTO result = postService.updatePost(100L, mockJwtToken, testUpdatePostDTO);
+
+        // Then
+        assertNull(result);
+        verify(postRepository, times(1)).findById(100L);
+        verify(postRepository, never()).save(any(Post.class));
+    }
+
+    @Test
+    public void should_not_update_post_when_user_is_not_owner() {
+        // Mock JWT token
+        String mockJwtToken = "Bearer mock.jwt.token";
+
+        // Mock
+        when(postRepository.findById(postId)).thenReturn(Optional.of(testPost));
+        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(otherUsername);
+
+        // When
+        PostDTO result = postService.updatePost(postId, mockJwtToken, testUpdatePostDTO);
+
+        // Then
+        assertNull(result);
+        verify(postRepository, times(2)).findById(postId);
+        verify(postRepository, never()).save(any(Post.class));
+    }
+
+    @Test
+    public void should_update_post_when_user_is_owner() {
+        // Mock JWT token
+        String mockJwtToken = "Bearer mock.jwt.token";
+
+        // Mock
+        when(postRepository.findById(postId)).thenReturn(Optional.of(testPost));
+        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(ownerUsername);
+        when(postRepository.save(any(Post.class))).thenReturn(testPost);
+        when(tagRepository.findByTagName("Tech")).thenReturn(tag);
+
+        // When
+        PostDTO result = postService.updatePost(postId, mockJwtToken, testUpdatePostDTO);
+
+        // Then
+        assertNotNull(result);
+        assertEquals("New Description", result.getDescription());
+        assertEquals("Agra", result.getLocation());
+        assertEquals("private", result.getPostType());
+        verify(postRepository, times(2)).findById(postId);
+        verify(postRepository, times(1)).save(any(Post.class));
+    }
+
+//    @Test
+//    public void should_not_update_post_when_throw_PostUpdateException_WhenGeneralExceptionOccurs() {
+//        // Mock JWT token
+//        String mockJwtToken = "Bearer mock.jwt.token";
+//
+//        // Arrange
+//        when(postRepository.findById(postId)).thenReturn(Optional.of(testPost));
+//        when(jwtService.extractUsername(mockJwtToken.substring(7))).thenReturn(ownerUsername);
+//        doThrow(new RuntimeException("Unexpected error")).when(postRepository).save(any(Post.class));
+//
+//        // Act & Assert
+//        PostUpdateException exception = assertThrows(PostUpdateException.class, () -> {
+//            postService.updatePost(postId, mockJwtToken, testUpdatePostDTO);
+//        });
+//
+//        assertEquals("Error updating post with ID: 1", exception.getMessage());
+//        verify(postRepository, times(2)).findById(postId);
+//        verify(postRepository, times(1)).save(any(Post.class));
+//    }
 
     // deletePost
 

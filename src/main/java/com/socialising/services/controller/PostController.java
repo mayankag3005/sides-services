@@ -63,6 +63,12 @@ public class PostController {
         return this.postService.getPostById(id);
     }
 
+    @PostMapping("updatePost/{id}")
+    public ResponseEntity<?> updatePostDetails(@PathVariable Long id, @RequestHeader("Authorization") String token, @RequestBody PostDTO postDTO) {
+        PostDTO updatedPost = postService.updatePost(id, token, postDTO);
+        return ResponseEntity.ok(updatedPost);
+    }
+
     @DeleteMapping("deletePost/{postId}")
     public int deletePostById(@PathVariable Long postId, @RequestHeader("Authorization") String token) {
         if (!checkTokenValidity(token)) {

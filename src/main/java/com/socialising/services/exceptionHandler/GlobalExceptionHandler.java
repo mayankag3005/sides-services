@@ -68,6 +68,28 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidDataException.class)
+    public ResponseEntity<?> handleInvalidDataException(InvalidDataException exception) {
+        return ResponseEntity
+                .badRequest()
+                .body("Invalid Data Provided: " + exception.getMessage());
+    }
+
+    @ExceptionHandler(PostUpdateException.class)
+    public ResponseEntity<?> handlePostUpdateException(PostUpdateException exception) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Post Update Error: " + exception.getMessage());
+    }
+
+    @ExceptionHandler(TagNotFoundException.class)
+    public ResponseEntity<?> handleTagNotFoundException(TagNotFoundException exception) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body("Error: " + exception.getMessage());
+    }
+
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleGlobalException(Exception ex) {
         return new ResponseEntity<>("An error occurred: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
