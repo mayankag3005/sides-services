@@ -4,9 +4,13 @@ import com.socialising.services.config.JwtService;
 import com.socialising.services.constants.Role;
 import com.socialising.services.model.Post;
 import com.socialising.services.model.User;
+import com.socialising.services.model.nosql.ImageMongo;
+import com.socialising.services.model.nosql.Video;
 import com.socialising.services.repository.ImageRepository;
 import com.socialising.services.repository.PostRepository;
 import com.socialising.services.repository.UserRepository;
+import com.socialising.services.repository.nosql.ImageMongoRepository;
+import com.socialising.services.repository.nosql.VideoRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
@@ -14,13 +18,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,11 +33,15 @@ public class PostService {
 
     private static final Logger log = LoggerFactory.getLogger(com.socialising.services.controller.PostController.class);
 
+    private static final int MAX_MEDIA_COUNT = 10;
+
     private final PostRepository postRepository;
 
     private final UserRepository userRepository;
 
-    private final ImageRepository imageRepository;
+    private final ImageMongoRepository imageMongoRepository;
+
+    private VideoRepository videoRepository;
 
     private final JwtService jwtService;
 
@@ -580,6 +588,156 @@ public class PostService {
         log.info("Hashtag [{}] deleted from Post {}", hashtag, postId);
         return 1;
     }
+
+    // Add Get Edit or Remove Media
+
+    // Add Media
+    public String addMedia(Long postId, MultipartFile file, String mediaType) throws IOException {
+        if(!checkPostExistInDB(postId)) {
+            return "";
+        }
+
+        // Get the post
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found"));
+
+        // Check if combined media count exceeds the limit
+        if (post.getImageIds().size() + post.getVideoIds().size() >= MAX_MEDIA_COUNT) {
+            throw new IllegalStateException("Cannot add more than 10 media files.");
+        }
+
+        String mediaId;
+        if (mediaType.equalsIgnoreCase("image")) {
+            mediaId = saveImage(file);
+            post.getImageIds().add(mediaId);
+        } else if (mediaType.equalsIgnoreCase("video")) {
+            mediaId = saveVideo(file);
+            post.getVideoIds().add(mediaId);
+        } else {
+            throw new IllegalArgumentException("Unsupported media type.");
+        }
+
+        postRepository.save(post);
+
+        log.info("Media [{}] added to Post {}", mediaType, mediaId);
+
+        return mediaId;
+    }
+
+    // Get Media
+    public Map<String, List<?>> getAllMedia(Long postId) {
+        if(!checkPostExistInDB(postId)) {
+            return null;
+        }
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found"));
+
+        // Get all images
+        List<ImageMongo> images = imageMongoRepository.findAllById(post.getImageIds());
+        // Get all videos
+        List<Video> videos = videoRepository.findAllById(post.getVideoIds());
+
+        Map<String, List<?>> mediaMap = new HashMap<>();
+        mediaMap.put("images", images);
+        mediaMap.put("videos", videos);
+
+        return mediaMap;
+    }
+
+    // Edit Media
+    public String editMedia(Long postId, String mediaId, MultipartFile newFile, String mediaType) throws IOException {
+        if(!checkPostExistInDB(postId)) {
+            return "";
+        }
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found"));
+
+        String newMediaId;
+        if (mediaType.equalsIgnoreCase("image")) {
+            imageMongoRepository.deleteById(mediaId);
+            newMediaId = saveImage(newFile);
+            replaceMediaId(post.getImageIds(), mediaId, newMediaId);
+        } else if (mediaType.equalsIgnoreCase("video")) {
+            videoRepository.deleteById(mediaId);
+            newMediaId = saveVideo(newFile);
+            replaceMediaId(post.getVideoIds(), mediaId, newMediaId);
+        } else {
+            throw new IllegalArgumentException("Unsupported media type.");
+        }
+
+        postRepository.save(post);
+
+        log.info("Edited Media [{}] with new Media for Post [{}]", mediaType, postId);
+
+        return newMediaId;
+    }
+
+    private void replaceMediaId(List<String> mediaList, String oldId, String newId) {
+        int index = mediaList.indexOf(oldId);
+        if(index != -1) {
+            mediaList.set(index, newId);
+        }
+    }
+
+    // Remove Media
+    public int removeMedia(Long postId, String mediaType, String mediaId) {
+        if(!checkPostExistInDB(postId)) {
+            return -1;
+        }
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found"));
+
+        if (mediaType.equalsIgnoreCase("image")) {
+            if(post.getImageIds().contains(mediaId)) {
+                post.getImageIds().remove(mediaId);
+                imageMongoRepository.deleteById(mediaId);
+            }
+
+        } else if (mediaType.equalsIgnoreCase("video")) {
+            if(post.getVideoIds().contains(mediaId)) {
+                post.getVideoIds().remove(mediaId);
+                videoRepository.deleteById(mediaId);
+            }
+        } else {
+            log.info("Unsupported Media Type");
+            return -1;
+        }
+
+        postRepository.save(post);
+        log.info("Media [{}] removed from Post [{}]", mediaType, postId);
+
+        return 1;
+    }
+
+    private String saveImage(MultipartFile file) throws IOException {
+        ImageMongo image = ImageMongo.builder()
+                .fileName(file.getOriginalFilename())
+                .data(file.getBytes())
+                .format(file.getContentType())
+                .uploadTimestamp(new Date())
+                .size(file.getSize())
+                .build();
+
+        ImageMongo savedImage = imageMongoRepository.save(image);
+        return savedImage.getId();
+    }
+
+    private String saveVideo(MultipartFile file) throws IOException {
+        Video video = Video.builder()
+                .videoName(file.getOriginalFilename())
+                .data(file.getBytes())
+                .format(file.getContentType())
+                .uploadTimestamp(new Date())
+                .size(file.getSize())
+                .build();
+        Video savedVideo = videoRepository.save(video);
+        return savedVideo.getId();
+    }
+
+
 
 //    public void exampleImageUpload() throws Exception {
 //        var image = new Image(678L, Files.readAllBytes(Paths.get("backgate college.jpeg")) , "image/jpeg", "backgate college.jpeg");

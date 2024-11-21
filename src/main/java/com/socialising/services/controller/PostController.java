@@ -7,11 +7,15 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/post/")
@@ -142,4 +146,48 @@ public class PostController {
     public int deleteHashtagToPost(@PathVariable Long postId, @RequestBody String hashtag) {
         return this.postService.deleteHashtagsOfPost(postId, hashtag);
     }
+
+
+    // Media
+
+    // Add media to a post
+    @PostMapping("/addMedia/{postId}/{mediaType}")
+    public ResponseEntity<String> addMediaToPost(
+            @PathVariable("postId") Long postId,
+            @PathVariable("mediaType") String mediaType,
+            @RequestBody MultipartFile file
+            ) throws IOException {
+        String updatedPost = postService.addMedia(postId, file, mediaType);
+        return ResponseEntity.ok(updatedPost);
+    }
+
+    // Get all media (images and videos) of a post
+    @GetMapping("/getMedia/{postId}")
+    public ResponseEntity<Map<String, List<?>>> getAllMedia(@PathVariable Long postId) {
+        Map<String, List<?>> media = postService.getAllMedia(postId);
+        return ResponseEntity.ok(media);
+    }
+
+    // Edit existing media in a post
+    @PutMapping("/editMedia/{postId}/{mediaType}/{oldId}")
+    public ResponseEntity<String> editMediaInPost(
+            @PathVariable("postId") Long postId,
+            @PathVariable("mediaType") String mediaType,
+            @PathVariable("oldId") String oldId,
+            @RequestBody MultipartFile newFile) throws IOException {
+        String updatedPost = postService.editMedia(postId, oldId, newFile, mediaType);
+        return ResponseEntity.ok(updatedPost);
+    }
+
+    // Delete Media
+    @DeleteMapping("/removeMedia/{postId}/{mediaType}")
+    public ResponseEntity<Integer> removeMediaFromPost(
+            @PathVariable("postId") Long postId,
+            @PathVariable("mediaType") String mediaType,
+            @RequestParam String mediaId) {
+        int updatedPost = postService.removeMedia(postId, mediaType, mediaId);
+        return ResponseEntity.ok(updatedPost);
+    }
+
+
 }

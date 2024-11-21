@@ -43,9 +43,11 @@ public class Post {
 
     private char onlyForWomen;
 
-//    private ArrayList<Image> images;
+    @ElementCollection
+    private List<String> imageIds;  // List of image IDs from MongoDB
 
-//    private ArrayList<Video> videos;
+    @ElementCollection
+    private List<String> videoIds;  // List of video IDs from MongoDB
 
 //    private ArrayList<Gif> gifs;
 
