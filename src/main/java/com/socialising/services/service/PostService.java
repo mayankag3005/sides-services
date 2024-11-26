@@ -164,10 +164,23 @@ public class PostService {
     }
 
     // GET All Posts
-    public ArrayList<Post> getAllPosts() {
+    public ArrayList<Post> getAllPostsWithoutConversion() {
 
         log.info("Total number of posts: {}", this.postRepository.count());
         return (ArrayList<Post>) this.postRepository.findAll();
+    }
+
+    public ArrayList<PostDTO> getAllPosts() {
+
+        log.info("Total number of posts in DB: {}", this.postRepository.count());
+        List<Post> allPosts = this.postRepository.findAll();
+        ArrayList<PostDTO> allPostDTOs = new ArrayList<>();
+
+        for(Post post : allPosts) {
+            allPostDTOs.add(PostMapper.entityToDto(post));
+        }
+
+        return allPostDTOs;
     }
 
     // Get Posts of Authenticated user

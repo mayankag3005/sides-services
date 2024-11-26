@@ -44,8 +44,8 @@ public class PostController {
 
     @GetMapping("getAllPosts")
 //    @PreAuthorize("hasAuthority('admin:read')")
-    public ArrayList<Post> getAllPosts() {
-        return this.postService.getAllPosts();
+    public ResponseEntity<ArrayList<PostDTO>> getAllPosts() {
+        return new ResponseEntity<>(this.postService.getAllPosts(), HttpStatus.OK) ;
     }
 
     @GetMapping("getPostsOfUser")

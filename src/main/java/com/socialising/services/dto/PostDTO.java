@@ -10,6 +10,7 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @Builder
 public class PostDTO {
+    private String username;
     private String description;
     private Timestamp createdTs;
     private String postType;

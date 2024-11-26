@@ -322,6 +322,7 @@ class PostServiceTest {
         List<Post> mockPosts = new ArrayList<>();
         mockPosts.add(Post.builder()
                 .description("This is first test post")
+                .ownerUser(ownerUser)
                 .postType("general")
                 .timeType("later")
                 .postStartTs("2024-06-11")
@@ -332,6 +333,7 @@ class PostServiceTest {
 
         mockPosts.add(Post.builder()
                 .description("This is second test post")
+                .ownerUser(otherUser)
                 .postType("event")
                 .timeType("now")
                 .postStartTs("2024-07-13")
@@ -345,12 +347,14 @@ class PostServiceTest {
         when(postRepository.count()).thenReturn((long) mockPosts.size());
 
         // When
-        ArrayList<Post> allPosts = postService.getAllPosts();
+        ArrayList<PostDTO> allPosts = postService.getAllPosts();
 
         // Then
         assertNotNull(allPosts);
         assertEquals(allPosts.size(), 2);
         assertEquals(allPosts.get(0).getDescription(), "This is first test post");
+        assertEquals(allPosts.get(0).getUsername(), ownerUsername);
+        assertEquals(allPosts.get(1).getUsername(), otherUsername);
 
         verify(postRepository).count();
         verify(postRepository).findAll();
