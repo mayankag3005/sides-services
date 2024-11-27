@@ -12,6 +12,7 @@ public class PostMapper {
         }
 
         PostDTO postDTO = new PostDTO();
+        postDTO.setPostId(post.getPostId());
         postDTO.setUsername(post.getOwnerUser().getUsername());
         postDTO.setDescription(post.getDescription());
         postDTO.setCreatedTs(post.getCreatedTs());
