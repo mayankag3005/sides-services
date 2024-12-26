@@ -705,7 +705,7 @@ public class UserService {
         if(combinedPosts.isEmpty()) {
             log.info("No Upcoming Events for User [{}]", username);
         } else {
-            log.info("Total Upcoming Events for User [{}] are {}", username, combinedPosts.size());
+            log.info("Total Upcoming Events for the User [{}] are {}", username, combinedPosts.size());
         }
 
         ArrayList<PostDTO> allEvents = new ArrayList<>();
