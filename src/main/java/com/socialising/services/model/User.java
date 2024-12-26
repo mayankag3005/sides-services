@@ -52,6 +52,8 @@ public class User implements UserDetails {
 
     private String lastName;
 
+    private String bio;
+
     private Long userDPId;
 
     @Enumerated(EnumType.STRING)

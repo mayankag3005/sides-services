@@ -455,6 +455,7 @@ class UserServiceTest {
         UserDTO userToUpdateDTO = new UserDTO();
         userToUpdateDTO.setFirstName("NewFirstName");
         userToUpdateDTO.setLastName("NewLastName");
+        userToUpdateDTO.setBio("This is me....");
         userToUpdateDTO.setDob("1990-01-01");
         userToUpdateDTO.setAge(34);
         userToUpdateDTO.setGender("Male");
@@ -481,7 +482,7 @@ class UserServiceTest {
         assertEquals("NewFirstName", updatedUser.getFirstName());
         assertEquals("NewLastName", updatedUser.getLastName());
         assertEquals("HomeCity", updatedUser.getHomeCity());
-//        assertEquals("password", updatedUser.getPassword());
+        assertEquals("This is me....", updatedUser.getBio());
 //        assertEquals(2, updatedUser.getTags().length);
         verify(userRepository, times(1)).save(any());
     }

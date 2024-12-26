@@ -13,6 +13,7 @@ public class UserMapper {
         user.setPhoneNumber(dto.getPhoneNumber());
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
+        user.setBio(dto.getBio());
         user.setDob(dto.getDob());
         user.setAge(dto.getAge());
         user.setGender(dto.getGender());
@@ -34,6 +35,7 @@ public class UserMapper {
         dto.setPhoneNumber(user.getPhoneNumber());
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
+        dto.setBio(user.getBio());
         dto.setDob(user.getDob());
         dto.setAge(user.getAge());
         dto.setGender(user.getGender());

@@ -208,6 +208,7 @@ public class UserService {
             // Map fields from DTO to Entity
             authUser.setFirstName(userDto.getFirstName());
             authUser.setLastName(userDto.getLastName());
+            authUser.setBio(userDto.getBio());
             authUser.setDob(userDto.getDob());
             authUser.setAge(userDto.getAge());
             authUser.setGender(userDto.getGender());
