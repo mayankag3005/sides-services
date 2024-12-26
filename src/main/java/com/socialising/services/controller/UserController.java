@@ -1,6 +1,7 @@
 package com.socialising.services.controller;
 
 import com.fasterxml.jackson.databind.util.JSONPObject;
+import com.socialising.services.dto.PostDTO;
 import com.socialising.services.dto.UserDTO;
 import com.socialising.services.model.ChangePasswordRequest;
 import com.socialising.services.model.Image;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -209,6 +211,14 @@ public class UserController {
             return null;
         }
         return this.userDetailsService.getReminderPosts(token);
+    }
+
+    @GetMapping("getUpcomingEvents")
+    public ResponseEntity<ArrayList<PostDTO>> getUpcomingEvents(@RequestHeader("Authorization") String token) {
+        if (!checkTokenValidity(token)) {
+            return null;
+        }
+        return new ResponseEntity<>(this.userDetailsService.getUpcomingEvents(token), HttpStatus.OK);
     }
 
     @DeleteMapping("deleteReminderPost/{postId}")

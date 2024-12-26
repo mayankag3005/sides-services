@@ -4,8 +4,10 @@ import com.socialising.services.config.JwtService;
 import com.socialising.services.constants.Role;
 import com.socialising.services.constants.Status;
 import com.socialising.services.controller.UserController;
+import com.socialising.services.dto.PostDTO;
 import com.socialising.services.dto.UserDTO;
 import com.socialising.services.exceptionHandler.UserNotFoundException;
+import com.socialising.services.mapper.PostMapper;
 import com.socialising.services.mapper.UserMapper;
 import com.socialising.services.model.ChangePasswordRequest;
 import com.socialising.services.model.Image;
@@ -25,8 +27,10 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
+import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -668,6 +672,49 @@ public class UserService {
         }
 
         return reminderPosts;
+    }
+
+    private List<Post> getMyPostEvents(User user) {
+        Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+
+        return user.getPosts().stream()
+                .filter(post -> "event".equalsIgnoreCase(post.getPostType()))
+                .filter(post -> post.getPostStartTs() != null && Timestamp.valueOf(post.getPostStartTs()).after(currentTime))
+                .toList();
+    }
+
+    // get all Events For User
+    public ArrayList<PostDTO> getUpcomingEvents(String token) {
+
+        String username = getUsernameFromToken(token);
+        User user = userRepository.findByUsername(username).get();
+        List<Post> reminderPosts = user.getReminderPosts();
+
+        List<Post> myEventPosts = getMyPostEvents(user);
+
+        List<Post> combinedPosts = new ArrayList<>();
+        if(!myEventPosts.isEmpty()) {
+            combinedPosts.addAll(myEventPosts);
+        }
+        if(!reminderPosts.isEmpty()) {
+            combinedPosts.addAll(reminderPosts);
+        }
+
+        combinedPosts.sort(Comparator.comparing(Post::getCreatedTs));
+
+        if(combinedPosts.isEmpty()) {
+            log.info("No Upcoming Events for User [{}]", username);
+        } else {
+            log.info("Total Upcoming Events for User [{}] are {}", username, combinedPosts.size());
+        }
+
+        ArrayList<PostDTO> allEvents = new ArrayList<>();
+
+        for(Post post : combinedPosts) {
+            allEvents.add(PostMapper.entityToDto(post));
+        }
+
+        return allEvents;
     }
 
     // DELETE a Reminder Post from User
