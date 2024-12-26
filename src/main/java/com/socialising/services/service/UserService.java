@@ -700,7 +700,7 @@ public class UserService {
             combinedPosts.addAll(reminderPosts);
         }
 
-        combinedPosts.sort(Comparator.comparing(Post::getCreatedTs));
+        combinedPosts.sort(Comparator.comparing(Post::getPostStartTs));
 
         if(combinedPosts.isEmpty()) {
             log.info("No Upcoming Events for User [{}]", username);
