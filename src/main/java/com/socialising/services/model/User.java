@@ -52,10 +52,6 @@ public class User implements UserDetails {
 
     private String lastName;
 
-//    @OneToOne
-//    @JoinColumn(name = "userDPId")
-//    private Image userDP;
-
     private Long userDPId;
 
     @Enumerated(EnumType.STRING)
